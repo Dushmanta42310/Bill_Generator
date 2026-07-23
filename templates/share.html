@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rapido Ride Invoice Summary</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet Map CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
+    <!-- Shared Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    
+    <style>
+        /* Mobile-first simulated view for sharing screen */
+        body {
+            background-color: #0b0f19;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+        }
+
+        .share-layout {
+            width: 100%;
+            max-width: 480px; /* Simulated Mobile View width */
+            background-color: var(--bg-secondary);
+            border-left: 1px solid var(--border-color);
+            border-right: 1px solid var(--border-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.8);
+            position: relative;
+        }
+
+        .share-header {
+            padding: 16px 20px;
+            background-color: var(--bg-tertiary);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .share-header h2 {
+            font-family: 'Outfit', sans-serif;
+            font-size: 18px;
+            font-weight: 700;
+            margin: 0;
+            color: var(--text-primary);
+        }
+
+        .share-tabs {
+            display: flex;
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 4px;
+            border-radius: 8px;
+            margin: 16px 20px;
+            gap: 4px;
+        }
+
+        .share-tabs button {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            padding: 8px 4px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all var(--transition-speed) ease;
+        }
+
+        .share-tabs button.active {
+            background-color: var(--bg-secondary);
+            color: var(--accent);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        .share-content {
+            flex-grow: 1;
+            padding: 0 16px 30px 16px;
+        }
+
+        /* Invoice Container override for mobile display */
+        .share-layout .invoice-container {
+            padding: 0;
+            background-color: transparent;
+            min-height: auto;
+        }
+
+        .share-layout .invoice-page {
+            max-width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            padding: 24px 16px;
+        }
+
+        .share-footer {
+            padding: 15px;
+            text-align: center;
+            font-size: 11px;
+            color: var(--text-muted);
+            border-top: 1px solid var(--border-color);
+            background-color: rgba(0,0,0,0.1);
+        }
+
+        .share-actions {
+            display: flex;
+            gap: 10px;
+            padding: 0 20px 16px 20px;
+        }
+
+        .share-actions button {
+            flex: 1;
+            justify-content: center;
+        }
+
+        @media (max-width: 480px) {
+            .share-layout {
+                max-width: 100%;
+                border-left: none;
+                border-right: none;
+            }
+        }
+
+        @media print {
+            body {
+                background-color: #ffffff !important;
+                display: block !important;
+            }
+            .share-layout {
+                max-width: 100% !important;
+                border: none !important;
+                box-shadow: none !important;
+                background: transparent !important;
+                display: block !important;
+            }
+            .share-layout .invoice-page {
+                box-shadow: none !important;
+                border: none !important;
+                border-radius: 0 !important;
+                padding: 0 !important;
+            }
+            .share-content {
+                padding: 0 !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="share-layout">
+        <!-- Sticky Mobile Header -->
+        <header class="share-header">
+            <h2>Rapido Receipt</h2>
+            <div class="rapido-brand">
+                <svg viewBox="0 0 100 40" height="24" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="0" y="5" width="30" height="30" rx="8" fill="#FCE300"/>
+                    <path d="M 8 26 L 16 10" stroke="#000" stroke-width="3.5" stroke-linecap="round"/>
+                    <path d="M 14 26 L 22 10" stroke="#000" stroke-width="3.5" stroke-linecap="round"/>
+                    <path d="M 20 26 L 28 10" stroke="#000" stroke-width="3.5" stroke-linecap="round"/>
+                    <text x="36" y="27" font-family="'Inter', sans-serif" font-weight="900" font-size="20" fill="#FCE300" style="letter-spacing: -0.5px;">rapido</text>
+                </svg>
+            </div>
+        </header>
+
+        <!-- Tab control -->
+        <div class="share-tabs">
+            <button class="active" onclick="switchShareTab(0)">1. Summary</button>
+            <button onclick="switchShareTab(1)">2. TSP Tax Invoice</button>
+            <button onclick="switchShareTab(2)">3. Roppen Tax Invoice</button>
+        </div>
+
+        <div class="share-actions">
+            <button class="btn btn-primary" onclick="printShareInvoice()">
+                <i data-lucide="printer"></i>
+                <span>Download / Print</span>
+            </button>
+        </div>
+
+        <!-- Invoices printable block -->
+        <div class="share-content">
+            <div class="invoice-container" id="invoice-print-container">
+                
+                <!-- ================= TAB 1: SUMMARY ================= -->
+                <div class="invoice-page active" id="page-payment-summary">
+                    <div class="page-header-row">
+                        <div class="invoice-title-block">
+                            <h2>Payment Summary</h2>
+                        </div>
+                        <div class="rapido-brand">
+                            <svg viewBox="0 0 100 40" height="28" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="0" y="5" width="30" height="30" rx="8" fill="#FCE300"/>
+                                <path d="M 8 26 L 16 10" stroke="#000" stroke-width="3.5" stroke-linecap="round"/>
+                                <path d="M 14 26 L 22 10" stroke="#000" stroke-width="3.5" stroke-linecap="round"/>
+                                <path d="M 20 26 L 28 10" stroke="#000" stroke-width="3.5" stroke-linecap="round"/>
+                                <text x="36" y="27" font-family="'Inter', sans-serif" font-weight="900" font-size="20" fill="#000" style="letter-spacing: -0.5px;">rapido</text>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="ride-meta-grid">
+                        <div class="meta-item">
+                            <span class="meta-label">Ride ID</span>
+                            <span class="meta-val">{{ ride.ride_id }}</span>
+                        </div>
+                        <div class="meta-item text-right">
+                            <span class="meta-label">Time of Ride</span>
+                            <span class="meta-val" id="ride-time-val">{{ ride.time_of_ride }}</span>
+                        </div>
+                    </div>
+
+                    <div class="total-banner">
+                        <span class="total-label">Total</span>
+                        <span class="total-amount">₹ {{ "%.2f"|format(ride.total_amount | float) }}</span>
+                    </div>
+
+                    <!-- Map Route Preview Frame -->
+                    <div class="receipt-map-wrapper">
+                        <div id="preview-map-snapshot"></div>
+                        <div class="map-stats-overlay">
+                            <div class="stat-box">
+                                <span class="stat-val">{{ "%.2f"|format(ride.distance_km | float) }} kms</span>
+                                <span class="stat-label">DISTANCE</span>
+                            </div>
+                            <div class="stat-box">
+                                <span class="stat-val">{{ "%.2f"|format(ride.duration_min | float) }} mins</span>
+                                <span class="stat-label">DURATION</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Route Addresses -->
+                    <div class="route-addresses-box">
+                        <div class="address-row">
+                            <div class="marker-container">
+                                <span class="addr-marker green-dot">P</span>
+                                <div class="connecting-line"></div>
+                            </div>
+                            <div class="address-text">
+                                {{ ride.pickup_address }}
+                            </div>
+                        </div>
+                        <div class="address-row pt-15">
+                            <div class="marker-container">
+                                <span class="addr-marker red-dot">D</span>
+                            </div>
+                            <div class="address-text">
+                                {{ ride.drop_address }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bill Details Box -->
+                    <div class="bill-details-container card-outline">
+                        <h3>Bill Details</h3>
+                        
+                        <!-- TSP (Captain) Section -->
+                        <div class="bill-row font-14 bold">
+                            <span>Transport Service Provider (TSP) Charges</span>
+                            <span>₹ {{ "%.2f"|format(ride.ride_charge | float) }}</span>
+                        </div>
+                        <div class="bill-row pl-15 small-text">
+                            <span>Captain Ride Fee</span>
+                            <span>₹ {{ "%.2f"|format(ride.captain_fee | float) }}</span>
+                        </div>
+                        <div class="bill-row pl-15 small-text">
+                            <span>TSP SGST (2.5%)</span>
+                            <span>₹ {{ "%.2f"|format(ride.ride_sgst | float) }}</span>
+                        </div>
+                        <div class="bill-row pl-15 small-text">
+                            <span>TSP CGST (2.5%)</span>
+                            <span>₹ {{ "%.2f"|format(ride.ride_cgst | float) }}</span>
+                        </div>
+
+                        <hr class="divider">
+
+                        <!-- Roppen (Booking) Section -->
+                        <div class="bill-row font-14 bold">
+                            <span>Roppen Convenience & Booking Fee</span>
+                            <span>₹ {{ "%.2f"|format((ride.booking_fees | float) + (ride.convenience_charges | float) + (ride.gateway_charges | float) + (ride.booking_cgst | float) + (ride.booking_sgst | float)) }}</span>
+                        </div>
+                        <div class="bill-row pl-15 small-text">
+                            <span>Booking Fee Base</span>
+                            <span>₹ {{ "%.2f"|format(ride.booking_fees | float) }}</span>
+                        </div>
+                        <div class="bill-row pl-15 small-text">
+                            <span>Convenience Charges</span>
+                            <span>₹ {{ "%.2f"|format(ride.convenience_charges | float) }}</span>
+                        </div>
+                        <div class="bill-row pl-15 small-text">
+                            <span>Gateway Charges</span>
+                            <span>₹ {{ "%.2f"|format(ride.gateway_charges | float) }}</span>
+                        </div>
+                        <div class="bill-row pl-15 small-text">
+                            <span>Booking SGST (9%)</span>
+                            <span>₹ {{ "%.2f"|format(ride.booking_sgst | float) }}</span>
+                        </div>
+                        <div class="bill-row pl-15 small-text">
+                            <span>Booking CGST (9%)</span>
+                            <span>₹ {{ "%.2f"|format(ride.booking_cgst | float) }}</span>
+                        </div>
+
+                        <hr class="divider">
+                        <div class="bill-row total-row">
+                            <div class="total-text-group">
+                                <span class="bold">Total Amount</span>
+                                <span class="small-text">(Inclusive of all Taxes)</span>
+                            </div>
+                            <span class="bold">₹ {{ "%.2f"|format(ride.total_amount | float) }}</span>
+                        </div>
+                    </div>
+
+                    <!-- Payment Details Box -->
+                    <div class="payment-method-container card-outline">
+                        <div class="bill-row font-14">
+                            <span>You Paid Using</span>
+                        </div>
+                        <div class="bill-row pt-10">
+                            <span class="bold">{{ ride.payment_method }}</span>
+                            <span class="bold">₹ {{ "%.2f"|format(ride.total_amount | float) }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ================= TAB 2: TSP TAX INVOICE ================= -->
+                <div class="invoice-page" id="page-ride-invoice">
+                    <div class="page-header-row border-bottom">
+                        <div class="invoice-title-block">
+                            <h2>Tax Invoice</h2>
+                            <span class="small-text">{{ ride.ride_id }}</span>
+                        </div>
+                        <div class="rapido-brand">
+                            <svg viewBox="0 0 100 40" height="28" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="0" y="5" width="30" height="30" rx="8" fill="#FCE300"/>
+                                <path d="M 8 26 L 16 10" stroke="#000" stroke-width="3.5" stroke-linecap="round"/>
+                                <path d="M 14 26 L 22 10" stroke="#000" stroke-width="3.5" stroke-linecap="round"/>
+                                <path d="M 20 26 L 28 10" stroke="#000" stroke-width="3.5" stroke-linecap="round"/>
+                                <text x="36" y="27" font-family="'Inter', sans-serif" font-weight="900" font-size="20" fill="#000" style="letter-spacing: -0.5px;">rapido</text>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="invoice-meta-table">
+                        <div class="meta-row">
+                            <span class="lbl">Invoice No.</span>
+                            <span class="val">{{ ride.invoice_no }}</span>
+                        </div>
+                        <div class="meta-row">
+                            <span class="lbl">Invoice Date</span>
+                            <span class="val id-invoice-time">{{ ride.time_of_ride }}</span>
+                        </div>
+                        <div class="meta-row">
+                            <span class="lbl">State</span>
+                            <span class="val">{{ ride.state }}</span>
+                        </div>
+                        <div class="meta-row">
+                            <span class="lbl">Tax Category</span>
+                            <span class="val">Other local transportation services of passengers n.e.c. (996419)</span>
+                        </div>
+                        <hr class="thin-divider">
+                        <div class="meta-row">
+                            <span class="lbl">Place of Supply</span>
+                            <span class="val">{{ ride.state }}</span>
+                        </div>
+                        <div class="meta-row">
+                            <span class="lbl">GST Number</span>
+                            <span class="val">09AAHCR1710J1ZE</span>
+                        </div>
+                        <div class="meta-row">
+                            <span class="lbl">Vehicle Number</span>
+                            <span class="val">{{ ride.vehicle_number }}</span>
+                        </div>
+                        <div class="meta-row">
+                            <span class="lbl">Captain Name</span>
+                            <span class="val">{{ ride.captain_name }}</span>
+                        </div>
+                        <hr class="thin-divider">
+                        <div class="meta-row">
+                            <span class="lbl">Customer Name</span>
+                            <span class="val">{{ ride.customer_name }}</span>
+                        </div>
+                        <div class="meta-row vertical">
+                            <span class="lbl">Customer Pick Up Address</span>
+                            <span class="val address">{{ ride.pickup_address }}</span>
+                        </div>
+                    </div>
+
+                    <div class="bill-details-container no-border font-14">
+                        <h3 class="border-bottom pb-10">Bill Details</h3>
+                        <div class="bill-row py-8">
+                            <span>Captain Fee</span>
+                            <span>₹ {{ "%.2f"|format(ride.captain_fee | float) }}</span>
+                        </div>
+                        <div class="bill-row py-8">
+                            <span>CGST (2.5%)</span>
+                            <span>₹ {{ "%.2f"|format(ride.ride_cgst | float) }}</span>
+                        </div>
+                        <div class="bill-row py-8">
+                            <span>SGST (2.5%)</span>
+                            <span>₹ {{ "%.2f"|format(ride.ride_sgst | float) }}</span>
+                        </div>
+                        <div class="bill-row py-8">
+                            <span>IGST (0%)</span>
+                            <span>₹ 0.00</span>
+                        </div>
+                        <div class="bill-row total-row border-top pt-10">
+                            <div class="total-text-group">
+                                <span class="bold font-16">Ride Charge</span>
+                                <span class="small-text">(Inclusive of Taxes)</span>
+                            </div>
+                            <span class="bold font-16">₹ {{ "%.2f"|format(ride.ride_charge | float) }}</span>
+                        </div>
+                    </div>
+
+                    <div class="legal-disclaimer">
+                        This document is issued by Transport Service Provider and not by Roppen Transportation Services Private Limited (Rapido). Rapido acts only as an Electronic Commerce Operator for the transportation services.
+                    </div>
+                </div>
+
+                <!-- ================= TAB 3: BOOKING CHARGE TAX INVOICE ================= -->
+                <div class="invoice-page" id="page-booking-invoice">
+                    <div class="page-header-row border-bottom">
+                        <div class="invoice-title-block">
+                            <h2>Tax Invoice</h2>
+                            <span class="small-text">{{ ride.ride_id }}</span>
+                        </div>
+                        <div class="rapido-brand">
+                            <svg viewBox="0 0 100 40" height="28" xmlns="http://www.w3.org/2000/svg">
+                                <rect x="0" y="5" width="30" height="30" rx="8" fill="#FCE300"/>
+                                <path d="M 8 26 L 16 10" stroke="#000" stroke-width="3.5" stroke-linecap="round"/>
+                                <path d="M 14 26 L 22 10" stroke="#000" stroke-width="3.5" stroke-linecap="round"/>
+                                <path d="M 20 26 L 28 10" stroke="#000" stroke-width="3.5" stroke-linecap="round"/>
+                                <text x="36" y="27" font-family="'Inter', sans-serif" font-weight="900" font-size="20" fill="#000" style="letter-spacing: -0.5px;">rapido</text>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="corporate-and-qr-grid">
+                        <div class="corp-details">
+                            <h4 class="bold">Roppen Transportation Services Private Limited</h4>
+                            <p class="font-12 color-gray pt-5">
+                                3rd Floor, D-51, Bhagwati<br>
+                                Tower, Vibhuti Khand, Gomti<br>
+                                Nagar, Lucknow, Uttar<br>
+                                Pradesh, 226010
+                            </p>
+                            <h4 class="bold pt-15">{{ ride.customer_name }}</h4>
+                            <p class="font-12 color-gray pt-5">
+                                {{ ride.pickup_address }}
+                            </p>
+                        </div>
+                        <div class="qr-code-box text-right">
+                            <div class="mock-qr-wrapper">
+                                <svg viewBox="0 0 100 100" width="80" height="80">
+                                    <path d="M 0 0 h 30 v 10 h -20 v 20 h -10 Z" fill="#000"/>
+                                    <path d="M 70 0 h 30 v 30 h -10 v -20 h -20 Z" fill="#000"/>
+                                    <path d="M 0 70 h 10 v 20 h 20 v 10 h -30 Z" fill="#000"/>
+                                    <path d="M 90 70 h 10 v 30 h -30 v -10 h 20 Z" fill="#000"/>
+                                    <rect x="15" y="15" width="15" height="15" fill="#000"/>
+                                    <rect x="70" y="15" width="15" height="15" fill="#000"/>
+                                    <rect x="15" y="70" width="15" height="15" fill="#000"/>
+                                    <rect x="35" y="35" width="30" height="30" fill="#000"/>
+                                    <rect x="35" y="70" width="10" height="10" fill="#000"/>
+                                    <rect x="70" y="45" width="15" height="15" fill="#000"/>
+                                    <rect x="45" y="15" width="10" height="10" fill="#000"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="invoice-meta-table pt-15">
+                        <div class="meta-row">
+                            <span class="lbl">Invoice No.</span>
+                            <span class="val">{{ ride.invoice_no }}</span>
+                        </div>
+                        <div class="meta-row">
+                            <span class="lbl">Invoice Date</span>
+                            <span class="val id-invoice-time">{{ ride.time_of_ride }}</span>
+                        </div>
+                        <div class="meta-row">
+                            <span class="lbl">Associated Fare</span>
+                            <span class="val">₹ {{ "%.2f"|format(ride.ride_charge | float) }}</span>
+                        </div>
+                        <div class="meta-row">
+                            <span class="lbl">Tax Category</span>
+                            <span class="val">Other services n.e.c. (999799)</span>
+                        </div>
+                        <div class="meta-row">
+                            <span class="lbl">Place of Supply</span>
+                            <span class="val">{{ ride.state }}</span>
+                        </div>
+                        <div class="meta-row">
+                            <span class="lbl">GST</span>
+                            <span class="val">09AAHCR1710J1ZE</span>
+                        </div>
+                    </div>
+
+                    <div class="bill-details-container no-border font-14">
+                        <h3 class="border-bottom pb-10">Bill Details</h3>
+                        <div class="bill-row py-8 text-muted font-12">
+                            <span>Associated Ride Fare (Ref)</span>
+                            <span>₹ {{ "%.2f"|format(ride.ride_charge | float) }}</span>
+                        </div>
+                        <div class="bill-row py-8">
+                            <span>Booking Fee</span>
+                            <span>₹ {{ "%.2f"|format(ride.booking_fees | float) }}</span>
+                        </div>
+                        <div class="bill-row py-8">
+                            <span>Convenience Charges</span>
+                            <span>₹ {{ "%.2f"|format(ride.convenience_charges | float) }}</span>
+                        </div>
+                        <div class="bill-row py-8">
+                            <span>Gateway Charges</span>
+                            <span>₹ {{ "%.2f"|format(ride.gateway_charges | float) }}</span>
+                        </div>
+                        <hr class="thin-divider">
+                        <div class="bill-row py-8 bold">
+                            <span>Sub Total</span>
+                            <span>₹ {{ "%.2f"|format((ride.booking_fees | float) + (ride.convenience_charges | float) + (ride.gateway_charges | float)) }}</span>
+                        </div>
+                        <div class="bill-row py-8">
+                            <span>CGST (9%)</span>
+                            <span>₹ {{ "%.2f"|format(ride.booking_cgst | float) }}</span>
+                        </div>
+                        <div class="bill-row py-8">
+                            <span>SGST (9%)</span>
+                            <span>₹ {{ "%.2f"|format(ride.booking_sgst | float) }}</span>
+                        </div>
+                        <div class="bill-row py-8">
+                            <span>IGST (0%)</span>
+                            <span>₹ 0.00</span>
+                        </div>
+                        <div class="bill-row total-row border-top pt-10">
+                            <div class="total-text-group">
+                                <span class="bold font-16">Final Amount</span>
+                                <span class="small-text">(Inclusive of Taxes)</span>
+                            </div>
+                            <span class="bold font-16">₹ {{ "%.2f"|format(ride.total_amount | float) }}</span>
+                        </div>
+                    </div>
+
+                    <div class="legal-disclaimer text-center border-top pt-15">
+                        This is a system generated invoice and hence no signature required.<br>
+                        <span class="bold">Thank you {{ ride.customer_name }}</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <footer class="share-footer">
+            <p>Generated by RAPID-GEN Studio</p>
+        </footer>
+    </div>
+
+    <!-- Leaflet Map JS CDN -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <script>
+        // Init Lucide icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        // Format dates inside HTML
+        function formatRideDate(dateStr) {
+            if (!dateStr) return '';
+            try {
+                const date = new Date(dateStr);
+                if (isNaN(date.getTime())) return dateStr;
+
+                const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                const m = months[date.getMonth()];
+                const d = date.getDate();
+                const y = date.getFullYear();
+
+                let suffix = 'th';
+                if (d === 1 || d === 21 || d === 31) suffix = 'st';
+                else if (d === 2 || d === 22) suffix = 'nd';
+                else if (d === 3 || d === 23) suffix = 'rd';
+
+                let hrs = date.getHours();
+                const mins = String(date.getMinutes()).padStart(2, '0');
+                const cleanAmpm = hrs >= 12 ? 'PM' : 'AM';
+                hrs = hrs % 12;
+                hrs = hrs ? hrs : 12;
+
+                return `${m} ${d}${suffix} ${y}, ${hrs}:${mins} ${cleanAmpm}`;
+            } catch (e) {
+                return dateStr;
+            }
+        }
+
+        // Apply formatted dates to UI on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const rawTime = "{{ ride.time_of_ride }}";
+            const formatted = formatRideDate(rawTime);
+            
+            document.getElementById('ride-time-val').innerText = formatted;
+            const elements = document.getElementsByClassName('id-invoice-time');
+            for (let el of elements) {
+                el.innerText = formatted;
+            }
+
+            // Init Leaflet map
+            initShareMap();
+        });
+
+        // Tab switches
+        function switchShareTab(index) {
+            const pages = document.getElementsByClassName('invoice-page');
+            const tabs = document.querySelectorAll('.share-tabs button');
+
+            for (let i = 0; i < pages.length; i++) {
+                pages[i].classList.remove('active');
+                tabs[i].classList.remove('active');
+            }
+
+            pages[index].classList.add('active');
+            tabs[index].classList.add('active');
+
+            if (index === 0 && previewMap) {
+                setTimeout(() => {
+                    previewMap.invalidateSize();
+                    if (routeLinePreview) {
+                        previewMap.fitBounds(routeLinePreview.getBounds(), { padding: [15, 15] });
+                    }
+                }, 100);
+            }
+        }
+
+        function printShareInvoice() {
+            window.print();
+        }
+
+        // Leaflet Maps logic
+        let previewMap;
+        let routeLinePreview;
+        const defaultCenter = [28.6612, 77.3572];
+
+        function initShareMap() {
+            previewMap = L.map('preview-map-snapshot', {
+                zoomControl: false,
+                dragging: false,
+                scrollWheelZoom: false,
+                doubleClickZoom: false,
+                touchZoom: false,
+                boxZoom: false,
+                keyboard: false
+            }).setView(defaultCenter, 13);
+
+            L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+                maxZoom: 20,
+                subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+                attribution: '&copy; Google Maps'
+            }).addTo(previewMap);
+
+            // Add Google logo watermark
+            const previewWrapper = document.querySelector('.receipt-map-wrapper');
+            if (previewWrapper) {
+                const logoDiv = document.createElement('div');
+                logoDiv.id = 'google-logo-watermark';
+                logoDiv.style.cssText = "position: absolute; bottom: 6px; left: 8px; z-index: 1000; font-family: Arial, sans-serif; font-weight: bold; font-size: 14px; background: rgba(255,255,255,0.85); padding: 1px 5px; border-radius: 3px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); pointer-events: none;";
+                logoDiv.innerHTML = '<span style="color:#4285F4">G</span><span style="color:#EA4335">o</span><span style="color:#FBBC05">o</span><span style="color:#4285F4">g</span><span style="color:#34A853">l</span><span style="color:#EA4335">e</span>';
+                previewWrapper.appendChild(logoDiv);
+            }
+
+            // Draw route between addresses
+            const pickupAddr = "{{ ride.pickup_address }}";
+            const dropAddr = "{{ ride.drop_address }}";
+            geocodeAndDraw(pickupAddr, dropAddr);
+        }
+
+        function geocodeAndDraw(pickup, drop) {
+            const geocode = (addr) => {
+                return fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(addr)}`, {
+                    headers: { 'User-Agent': 'RapidGen-Ride-Bill-Generator' }
+                }).then(res => res.json());
+            };
+
+            Promise.all([geocode(pickup), geocode(drop)])
+                .then(([pRes, dRes]) => {
+                    if (pRes.length > 0 && dRes.length > 0) {
+                        const pCoords = [parseFloat(pRes[0].lat), parseFloat(pRes[0].lon)];
+                        const dCoords = [parseFloat(dRes[0].lat), parseFloat(dRes[0].lon)];
+                        
+                        // Custom green badge for Pickup
+                        const pickupIcon = L.divIcon({
+                            className: 'custom-marker green',
+                            html: '<div style="background-color: #7cb342; color: white; width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 800; border: 1.5px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.3)">P</div>',
+                            iconSize: [20, 20],
+                            iconAnchor: [10, 10]
+                        });
+
+                        // Custom red badge for Drop
+                        const dropIcon = L.divIcon({
+                            className: 'custom-marker red',
+                            html: '<div style="background-color: #ea4335; color: white; width: 20px; height: 24px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; border: 1.5px solid white; box-shadow: 0 1px 4px rgba(0,0,0,0.3)"><span style="transform: rotate(45deg); font-size: 9px; font-weight: 800; margin-top: -2px;">D</span></div>',
+                            iconSize: [20, 24],
+                            iconAnchor: [10, 24]
+                        });
+
+                        L.marker(pCoords, { icon: pickupIcon }).addTo(previewMap);
+                        L.marker(dCoords, { icon: dropIcon }).addTo(previewMap);
+
+                        // Fetch routing shape
+                        const routeUrl = `https://router.project-osrm.org/route/v1/driving/${pCoords[1]},${pCoords[0]};${dCoords[1]},${dCoords[0]}?overview=full&geometries=geojson`;
+                        fetch(routeUrl)
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.routes && data.routes.length > 0) {
+                                    const geojson = data.routes[0].geometry;
+                                    routeLinePreview = L.geoJSON(geojson, {
+                                        style: {
+                                            color: '#e91e63',
+                                            weight: 5,
+                                            opacity: 0.9
+                                        }
+                                    }).addTo(previewMap);
+                                    
+                                    const bounds = routeLinePreview.getBounds();
+                                    previewMap.fitBounds(bounds, { padding: [15, 15] });
+                                    
+                                    setTimeout(() => {
+                                        previewMap.invalidateSize();
+                                    }, 200);
+                                }
+                            });
+                    }
+                })
+                .catch(err => console.warn("Share geocode route mapping failed: ", err));
+        }
+    </script>
+</body>
+</html>

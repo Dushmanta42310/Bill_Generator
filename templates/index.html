@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAPID-GEN | Premium Rapido-Style Ride Invoice Generator</title>
+    
+    <!-- Google Fonts: Outfit for UI, Inter for details, Roboto for invoice -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800&family=Roboto:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet.js Map CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="logo-area">
+                <div class="emblem">
+                    <svg viewBox="0 0 24 24" width="24" height="24">
+                        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="#f39c12"/>
+                    </svg>
+                </div>
+                <h2>RAPID-GEN</h2>
+            </div>
+            
+            <nav class="sidebar-nav">
+                <a href="#dashboard" class="nav-item active">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#history-section" class="nav-item">
+                    <i data-lucide="history"></i>
+                    <span>Ride Logs</span>
+                </a>
+                <a href="https://github.com" target="_blank" class="nav-item">
+                    <i data-lucide="help-circle"></i>
+                    <span>Documentation</span>
+                </a>
+            </nav>
+            
+            <div class="sidebar-footer">
+                <div class="db-status">
+                    <div class="status-indicator online"></div>
+                    <span id="db-status-text">SQLite Fallback</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="top-bar">
+                <div class="welcome">
+                    <h1>Ride Invoice Studio</h1>
+                    <p>Generate, edit, and print official Rapido ride summaries & tax receipts.</p>
+                </div>
+                <div class="quick-actions">
+                    <button class="btn btn-secondary" onclick="resetForm()">
+                        <i data-lucide="rotate-ccw"></i>
+                        <span>Reset Form</span>
+                    </button>
+                    <button class="btn btn-primary" onclick="submitRide()">
+                        <i data-lucide="save"></i>
+                        <span>Save Ride to DB</span>
+                    </button>
+                </div>
+            </header>
+
+            <div class="dashboard-grid">
+                <!-- Left Pane: Configuration & Map -->
+                <section class="config-panel card">
+                    <div class="card-header">
+                        <i data-lucide="sliders"></i>
+                        <h3>Ride Details</h3>
+                    </div>
+                    
+                    <form id="ride-form" class="ride-form">
+                        <!-- Customer Details -->
+                        <div class="form-group-row">
+                            <div class="form-group">
+                                <label for="customer_name">Customer Name</label>
+                                <input type="text" id="customer_name" required value="Ashit Das" placeholder="Enter customer name">
+                            </div>
+                            <div class="form-group">
+                                <label for="time_of_ride">Ride Date & Time</label>
+                                <input type="datetime-local" id="time_of_ride" required>
+                            </div>
+                        </div>
+
+                        <!-- Captain / Vehicle Details -->
+                        <div class="form-group-row">
+                            <div class="form-group">
+                                <label for="captain_name">Captain Name</label>
+                                <input type="text" id="captain_name" required value="gagan gangwar" placeholder="Captain name">
+                            </div>
+                            <div class="form-group">
+                                <label for="vehicle_number">Vehicle Number</label>
+                                <input type="text" id="vehicle_number" required value="UP14FY3537" placeholder="e.g. UP14FY3537">
+                            </div>
+                        </div>
+
+                        <!-- ID details -->
+                        <div class="form-group-row">
+                            <div class="form-group">
+                                <label for="ride_id">Ride ID</label>
+                                <div class="input-with-action">
+                                    <input type="text" id="ride_id" required placeholder="Auto-generated">
+                                    <button type="button" class="btn-icon" onclick="generateRideId()" title="Generate Random ID">
+                                        <i data-lucide="shuffle"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="invoice_no">Invoice Number</label>
+                                <div class="input-with-action">
+                                    <input type="text" id="invoice_no" required placeholder="Auto-generated">
+                                    <button type="button" class="btn-icon" onclick="generateInvoiceNo()" title="Generate Random Invoice">
+                                        <i data-lucide="shuffle"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- State and Payment -->
+                        <div class="form-group-row">
+                            <div class="form-group">
+                                <label for="state">State / Place of Supply</label>
+                                <input type="text" id="state" required value="Uttar Pradesh" placeholder="State name">
+                            </div>
+                            <div class="form-group">
+                                <label for="payment_method">Payment Method</label>
+                                <select id="payment_method">
+                                    <option value="QR Pay" selected>QR Pay</option>
+                                    <option value="Cash">Cash</option>
+                                    <option value="Wallet">Wallet / Online</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Map Location Picker -->
+                        <div class="form-group map-form-group">
+                            <div class="map-header">
+                                <label>Interactive Route Route Planner (Leaflet Map)</label>
+                                <span class="map-hint">Click on map for 🟢 Pickup & 🔴 Drop, or search below:</span>
+                            </div>
+                            
+                            <!-- Address inputs / Nominatim search -->
+                            <div class="address-search-container">
+                                <div class="search-input-wrap">
+                                    <span class="dot-indicator green"></span>
+                                    <input type="text" id="pickup_search" placeholder="Search Pickup Location..." autocomplete="off">
+                                    <button type="button" class="btn-search" onclick="searchAddress('pickup')">
+                                        <i data-lucide="search"></i>
+                                    </button>
+                                    <div id="pickup_suggestions" class="autocomplete-suggestions"></div>
+                                </div>
+                                <div class="search-input-wrap">
+                                    <span class="dot-indicator red"></span>
+                                    <input type="text" id="drop_search" placeholder="Search Drop Location..." autocomplete="off">
+                                    <button type="button" class="btn-search" onclick="searchAddress('drop')">
+                                        <i data-lucide="search"></i>
+                                    </button>
+                                    <div id="drop_suggestions" class="autocomplete-suggestions"></div>
+                                </div>
+                            </div>
+
+                            <!-- Actual Leaflet Map -->
+                            <div id="map-container"></div>
+                            
+                            <div class="form-group">
+                                <label for="pickup_address">Full Pickup Address</label>
+                                <textarea id="pickup_address" rows="2" placeholder="Geocoded pickup address..."></textarea>
+                            </div>
+                            <div class="form-group">
+                                <label for="drop_address">Full Drop Address</label>
+                                <textarea id="drop_address" rows="2" placeholder="Geocoded drop address..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Financial & Route Customization -->
+                        <div class="price-toggle-container">
+                            <label class="switch">
+                                <input type="checkbox" id="override_prices" onchange="toggleOverride()">
+                                <span class="slider round"></span>
+                            </label>
+                            <span>Override Auto-Calculated Distance / Prices</span>
+                        </div>
+
+                        <div class="price-config-fields disabled" id="price-config-fields">
+                            <div class="form-group-row">
+                                <div class="form-group">
+                                    <label for="distance_km">Distance (kms)</label>
+                                    <input type="number" step="0.01" id="distance_km" value="5.50" oninput="calculatePrices()">
+                                </div>
+                                <div class="form-group">
+                                    <label for="duration_min">Duration (mins)</label>
+                                    <input type="number" step="0.01" id="duration_min" value="13.08" oninput="calculatePrices()">
+                                </div>
+                            </div>
+                            <div class="form-group-row">
+                                <div class="form-group">
+                                    <label for="ride_charge">Ride Charge (₹)</label>
+                                    <input type="number" step="0.01" id="ride_charge" value="50.82" oninput="recalculateTaxes()">
+                                </div>
+                                <div class="form-group">
+                                    <label for="booking_fees">Booking Fee Base (₹)</label>
+                                    <input type="number" step="0.01" id="booking_fees" value="1.00" oninput="recalculateTaxes()">
+                                </div>
+                                <div class="form-group">
+                                    <label for="convenience_charges">Convenience Charges (₹)</label>
+                                    <input type="number" step="0.01" id="convenience_charges" value="1.50" oninput="recalculateTaxes()">
+                                </div>
+                                <div class="form-group">
+                                    <label for="gateway_charges">Gateway Charges (₹)</label>
+                                    <input type="number" step="0.01" id="gateway_charges" value="0.89" oninput="recalculateTaxes()">
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </section>
+
+                <!-- Right Pane: Real-time Printable Invoices -->
+                <section class="preview-panel">
+                    <div class="preview-header card-header">
+                        <div class="tab-controls">
+                            <button class="tab-btn active" onclick="switchTab(0)">1. Payment Summary</button>
+                            <button class="tab-btn" onclick="switchTab(1)">2. TSP Tax Invoice</button>
+                            <button class="tab-btn" onclick="switchTab(2)">3. Roppen Tax Invoice</button>
+                        </div>
+                        <button class="btn btn-accent" onclick="printInvoice()">
+                            <i data-lucide="printer"></i>
+                            <span>Print Tab</span>
+                        </button>
+                    </div>
+
+                    <!-- Print Container -->
+                    <div class="invoice-container printable-area" id="invoice-print-container">
+                        
+                        <!-- ================= PAGE 1: PAYMENT SUMMARY ================= -->
+                        <div class="invoice-page active" id="page-payment-summary">
+                            <div class="page-header-row">
+                                <div class="invoice-title-block">
+                                    <h2>Payment Summary</h2>
+                                </div>
+                                <div class="rapido-brand">
+                                    <svg viewBox="0 0 100 40" height="28" xmlns="http://www.w3.org/2000/svg">
+                                        <rect x="0" y="5" width="30" height="30" rx="8" fill="#FCE300"/>
+                                        <path d="M 8 26 L 16 10" stroke="#000" stroke-width="3.5" stroke-linecap="round"/>
+                                        <path d="M 14 26 L 22 10" stroke="#000" stroke-width="3.5" stroke-linecap="round"/>
+                                        <path d="M 20 26 L 28 10" stroke="#000" stroke-width="3.5" stroke-linecap="round"/>
+                                        <text x="36" y="27" font-family="'Inter', sans-serif" font-weight="900" font-size="20" fill="#000" style="letter-spacing: -0.5px;">rapido</text>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <div class="ride-meta-grid">
+                                <div class="meta-item">
+                                    <span class="meta-label">Ride ID</span>
+                                    <span class="meta-val display-ride-id">RD17839989987016234</span>
+                                </div>
+                                <div class="meta-item text-right">
+                                    <span class="meta-label">Time of Ride</span>
+                                    <span class="meta-val display-ride-time">Jul 14th 2026, 9:09 AM</span>
+                                </div>
+                            </div>
+
+                            <div class="total-banner">
+                                <span class="total-label">Total</span>
+                                <span class="total-amount display-total-amount">₹ 52.00</span>
+                            </div>
+
+                            <!-- Map Route Preview Frame -->
+                            <div class="receipt-map-wrapper">
+                                <div id="preview-map-snapshot"></div>
+                                <div class="map-stats-overlay">
+                                    <div class="stat-box">
+                                        <span class="stat-val display-distance">5.50 kms</span>
+                                        <span class="stat-label">DISTANCE</span>
+                                    </div>
+                                    <div class="stat-box">
+                                        <span class="stat-val display-duration">13.08 mins</span>
+                                        <span class="stat-label">DURATION</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Route Addresses -->
+                            <div class="route-addresses-box">
+                                <div class="address-row">
+                                    <div class="marker-container">
+                                        <span class="addr-marker green-dot">P</span>
+                                        <div class="connecting-line"></div>
+                                    </div>
+                                    <div class="address-text display-pickup-address">
+                                        Indu Sadan, Sector 3, Vasundhara, Ghaziabad, Uttar Pradesh 201012, India
+                                    </div>
+                                </div>
+                                <div class="address-row pt-15">
+                                    <div class="marker-container">
+                                        <span class="addr-marker red-dot">D</span>
+                                    </div>
+                                    <div class="address-text display-drop-address">
+                                        Metro Station Vaishali, Metro Station Vaishali, Maharajpur, Sahibabad Industrial Area Site 4, Sahibabad, Ghaziabad, Uttar Pradesh 201019, India
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Bill Details Box -->
+                            <div class="bill-details-container card-outline">
+                                <h3>Bill Details</h3>
+                                
+                                <!-- TSP (Captain) Section -->
+                                <div class="bill-row font-14 bold text-accent-color">
+                                    <span>Transport Service Provider (TSP) Charges</span>
+                                    <span class="display-ride-charge">₹ 50.82</span>
+                                </div>
+                                <div class="bill-row pl-15 small-text">
+                                    <span>Captain Ride Fee</span>
+                                    <span class="display-captain-fee">₹ 48.40</span>
+                                </div>
+                                <div class="bill-row pl-15 small-text">
+                                    <span>TSP SGST (2.5%)</span>
+                                    <span class="display-ride-sgst">₹ 1.21</span>
+                                </div>
+                                <div class="bill-row pl-15 small-text">
+                                    <span>TSP CGST (2.5%)</span>
+                                    <span class="display-ride-cgst">₹ 1.21</span>
+                                </div>
+
+                                <hr class="divider">
+
+                                <!-- Roppen (Booking) Section -->
+                                <div class="bill-row font-14 bold text-accent-color">
+                                    <span>Roppen Convenience & Booking Fee</span>
+                                    <span class="display-booking-total">₹ 4.00</span>
+                                </div>
+                                <div class="bill-row pl-15 small-text">
+                                    <span>Booking Fee Base</span>
+                                    <span class="display-booking-fees">₹ 1.00</span>
+                                </div>
+                                <div class="bill-row pl-15 small-text">
+                                    <span>Convenience Charges</span>
+                                    <span class="display-convenience-charges">₹ 1.50</span>
+                                </div>
+                                <div class="bill-row pl-15 small-text">
+                                    <span>Gateway Charges</span>
+                                    <span class="display-gateway-charges">₹ 0.89</span>
+                                </div>
+                                <div class="bill-row pl-15 small-text">
+                                    <span>Booking SGST (9%)</span>
+                                    <span class="display-booking-sgst">₹ 0.31</span>
+                                </div>
+                                <div class="bill-row pl-15 small-text">
+                                    <span>Booking CGST (9%)</span>
+                                    <span class="display-booking-cgst">₹ 0.30</span>
+                                </div>
+
+                                <hr class="divider">
+                                <div class="bill-row total-row">
+                                    <div class="total-text-group">
+                                        <span class="bold">Total Amount</span>
+                                        <span class="small-text">(Inclusive of all Taxes)</span>
+                                    </div>
+                                    <span class="bold display-total-amount">₹ 52.00</span>
+                                </div>
+                            </div>
+
+                            <!-- Payment Details Box -->
+                            <div class="payment-method-container card-outline">
+                                <div class="bill-row font-14">
+                                    <span>You Paid Using</span>
+                                </div>
+                                <div class="bill-row pt-10">
+                                    <span class="bold display-payment-method">QR Pay</span>
+                                    <span class="bold display-total-amount">₹ 52.00</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ================= PAGE 2: RIDE CHARGE TAX INVOICE ================= -->
+                        <div class="invoice-page" id="page-ride-invoice">
+                            <div class="page-header-row border-bottom">
+                                <div class="invoice-title-block">
+                                    <h2>Tax Invoice</h2>
+                                    <span class="small-text display-ride-id">RD17839989987016234</span>
+                                </div>
+                                <div class="rapido-brand">
+                                    <svg viewBox="0 0 100 40" height="28" xmlns="http://www.w3.org/2000/svg">
+                                        <rect x="0" y="5" width="30" height="30" rx="8" fill="#FCE300"/>
+                                        <path d="M 8 26 L 16 10" stroke="#000" stroke-width="3.5" stroke-linecap="round"/>
+                                        <path d="M 14 26 L 22 10" stroke="#000" stroke-width="3.5" stroke-linecap="round"/>
+                                        <path d="M 20 26 L 28 10" stroke="#000" stroke-width="3.5" stroke-linecap="round"/>
+                                        <text x="36" y="27" font-family="'Inter', sans-serif" font-weight="900" font-size="20" fill="#000" style="letter-spacing: -0.5px;">rapido</text>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <!-- Invoice Metadata Details -->
+                            <div class="invoice-meta-table">
+                                <div class="meta-row">
+                                    <span class="lbl">Invoice No.</span>
+                                    <span class="val display-invoice-no">2627UP0034758416</span>
+                                </div>
+                                <div class="meta-row">
+                                    <span class="lbl">Invoice Date</span>
+                                    <span class="val display-ride-time">Jul 14th 2026, 9:09 AM</span>
+                                </div>
+                                <div class="meta-row">
+                                    <span class="lbl">State</span>
+                                    <span class="val display-state">Uttar Pradesh</span>
+                                </div>
+                                <div class="meta-row">
+                                    <span class="lbl">Tax Category</span>
+                                    <span class="val">Other local transportation services of passengers n.e.c. (996419)</span>
+                                </div>
+                                <hr class="thin-divider">
+                                <div class="meta-row">
+                                    <span class="lbl">Place of Supply</span>
+                                    <span class="val display-state">Uttar Pradesh</span>
+                                </div>
+                                <div class="meta-row">
+                                    <span class="lbl">GST Number</span>
+                                    <span class="val">09AAHCR1710J1ZE</span>
+                                </div>
+                                <div class="meta-row">
+                                    <span class="lbl">Vehicle Number</span>
+                                    <span class="val display-vehicle-no">UP14FY3537</span>
+                                </div>
+                                <div class="meta-row">
+                                    <span class="lbl">Captain Name</span>
+                                    <span class="val display-captain-name">gagan gangwar</span>
+                                </div>
+                                <hr class="thin-divider">
+                                <div class="meta-row">
+                                    <span class="lbl">Customer Name</span>
+                                    <span class="val display-customer-name">Ashit Das</span>
+                                </div>
+                                <div class="meta-row vertical">
+                                    <span class="lbl">Customer Pick Up Address</span>
+                                    <span class="val address display-pickup-address">Indu Sadan, Sector 3, Vasundhara, Ghaziabad, Uttar Pradesh 201012, India</span>
+                                </div>
+                            </div>
+
+                            <!-- Bill Breakdown Table -->
+                            <div class="bill-details-container no-border font-14">
+                                <h3 class="border-bottom pb-10">Bill Details</h3>
+                                <div class="bill-row py-8">
+                                    <span>Captain Fee</span>
+                                    <span class="display-captain-fee">₹ 48.40</span>
+                                </div>
+                                <div class="bill-row py-8">
+                                    <span>CGST (2.5%)</span>
+                                    <span class="display-ride-cgst">₹ 1.21</span>
+                                </div>
+                                <div class="bill-row py-8">
+                                    <span>SGST (2.5%)</span>
+                                    <span class="display-ride-sgst">₹ 1.21</span>
+                                </div>
+                                <div class="bill-row py-8">
+                                    <span>IGST (0%)</span>
+                                    <span>₹ 0.00</span>
+                                </div>
+                                <div class="bill-row total-row border-top pt-10">
+                                    <div class="total-text-group">
+                                        <span class="bold font-16">Ride Charge</span>
+                                        <span class="small-text">(Inclusive of Taxes)</span>
+                                    </div>
+                                    <span class="bold font-16 display-ride-charge">₹ 50.82</span>
+                                </div>
+                            </div>
+
+                            <div class="legal-disclaimer">
+                                This document is issued by Transport Service Provider and not by Roppen Transportation Services Private Limited (Rapido). Rapido acts only as an Electronic Commerce Operator for the transportation services.
+                            </div>
+                        </div>
+
+                        <!-- ================= PAGE 3: BOOKING CHARGE TAX INVOICE ================= -->
+                        <div class="invoice-page" id="page-booking-invoice">
+                            <div class="page-header-row border-bottom">
+                                <div class="invoice-title-block">
+                                    <h2>Tax Invoice</h2>
+                                    <span class="small-text display-ride-id">RD17839989987016234</span>
+                                </div>
+                                <div class="rapido-brand">
+                                    <svg viewBox="0 0 100 40" height="28" xmlns="http://www.w3.org/2000/svg">
+                                        <rect x="0" y="5" width="30" height="30" rx="8" fill="#FCE300"/>
+                                        <path d="M 8 26 L 16 10" stroke="#000" stroke-width="3.5" stroke-linecap="round"/>
+                                        <path d="M 14 26 L 22 10" stroke="#000" stroke-width="3.5" stroke-linecap="round"/>
+                                        <path d="M 20 26 L 28 10" stroke="#000" stroke-width="3.5" stroke-linecap="round"/>
+                                        <text x="36" y="27" font-family="'Inter', sans-serif" font-weight="900" font-size="20" fill="#000" style="letter-spacing: -0.5px;">rapido</text>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <div class="corporate-and-qr-grid">
+                                <div class="corp-details">
+                                    <h4 class="bold">Roppen Transportation Services Private Limited</h4>
+                                    <p class="font-12 color-gray pt-5">
+                                        3rd Floor, D-51, Bhagwati<br>
+                                        Tower, Vibhuti Khand, Gomti<br>
+                                        Nagar, Lucknow, Uttar<br>
+                                        Pradesh, 226010
+                                    </p>
+                                    <h4 class="bold pt-15 display-customer-name">Ashit Das</h4>
+                                    <p class="font-12 color-gray pt-5 display-pickup-address">
+                                        Indu Sadan, Sector 3, Vasundhara, Ghaziabad, Uttar Pradesh 201012, India
+                                    </p>
+                                </div>
+                                <div class="qr-code-box text-right">
+                                    <!-- A mock QR code represented using styled CSS & vector lines to look genuine -->
+                                    <div class="mock-qr-wrapper">
+                                        <svg viewBox="0 0 100 100" width="100" height="100">
+                                            <path d="M 0 0 h 30 v 10 h -20 v 20 h -10 Z" fill="#000"/>
+                                            <path d="M 70 0 h 30 v 30 h -10 v -20 h -20 Z" fill="#000"/>
+                                            <path d="M 0 70 h 10 v 20 h 20 v 10 h -30 Z" fill="#000"/>
+                                            <path d="M 90 70 h 10 v 30 h -30 v -10 h 20 Z" fill="#000"/>
+                                            <!-- Center modules -->
+                                            <rect x="15" y="15" width="15" height="15" fill="#000"/>
+                                            <rect x="70" y="15" width="15" height="15" fill="#000"/>
+                                            <rect x="15" y="70" width="15" height="15" fill="#000"/>
+                                            <rect x="35" y="35" width="30" height="30" fill="#000"/>
+                                            <rect x="35" y="70" width="10" height="10" fill="#000"/>
+                                            <rect x="70" y="45" width="15" height="15" fill="#000"/>
+                                            <rect x="45" y="15" width="10" height="10" fill="#000"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="invoice-meta-table pt-15">
+                                <div class="meta-row">
+                                    <span class="lbl">Invoice No.</span>
+                                    <span class="val display-invoice-no">2627UP0034758416</span>
+                                </div>
+                                <div class="meta-row">
+                                    <span class="lbl">Invoice Date</span>
+                                    <span class="val display-ride-time">Jul 14th 2026, 9:09 AM</span>
+                                </div>
+                                <div class="meta-row">
+                                    <span class="lbl">Associated Fare</span>
+                                    <span class="val display-ride-charge">₹ 50.82</span>
+                                </div>
+                                <div class="meta-row">
+                                    <span class="lbl">Tax Category</span>
+                                    <span class="val">Other services n.e.c. (999799)</span>
+                                </div>
+                                <div class="meta-row">
+                                    <span class="lbl">Place of Supply</span>
+                                    <span class="val display-state">Uttar Pradesh</span>
+                                </div>
+                                <div class="meta-row">
+                                    <span class="lbl">GST</span>
+                                    <span class="val">09AAHCR1710J1ZE</span>
+                                </div>
+                            </div>
+
+                            <div class="bill-details-container no-border font-14">
+                                <h3 class="border-bottom pb-10">Bill Details</h3>
+                                <div class="bill-row py-8 text-muted font-12">
+                                    <span>Associated Ride Fare (Ref)</span>
+                                    <span class="display-ride-charge">₹ 50.82</span>
+                                </div>
+                                <div class="bill-row py-8">
+                                    <span>Booking Fee</span>
+                                    <span class="display-booking-fees">₹ 1.00</span>
+                                </div>
+                                <div class="bill-row py-8">
+                                    <span>Convenience Charges</span>
+                                    <span class="display-convenience-charges">₹ 1.50</span>
+                                </div>
+                                <div class="bill-row py-8">
+                                    <span>Gateway Charges</span>
+                                    <span class="display-gateway-charges">₹ 0.89</span>
+                                </div>
+                                <hr class="thin-divider">
+                                <div class="bill-row py-8 bold">
+                                    <span>Sub Total</span>
+                                    <span class="display-booking-subtotal">₹ 1.00</span>
+                                </div>
+                                <div class="bill-row py-8">
+                                    <span>CGST (9%)</span>
+                                    <span class="display-booking-cgst">₹ 0.09</span>
+                                </div>
+                                <div class="bill-row py-8">
+                                    <span>SGST (9%)</span>
+                                    <span class="display-booking-sgst">₹ 0.09</span>
+                                </div>
+                                <div class="bill-row py-8">
+                                    <span>IGST (0%)</span>
+                                    <span>₹ 0.00</span>
+                                </div>
+                                <div class="bill-row total-row border-top pt-10">
+                                    <div class="total-text-group">
+                                        <span class="bold font-16">Final Amount</span>
+                                        <span class="small-text">(Inclusive of Taxes)</span>
+                                    </div>
+                                    <span class="bold font-16 display-total-amount">₹ 52.00</span>
+                                </div>
+                            </div>
+
+                            <div class="legal-disclaimer text-center border-top pt-15">
+                                This is a system generated invoice and hence no signature required.<br>
+                                <span class="bold">Thank you <span class="display-customer-name">Ashit Das</span></span>
+                            </div>
+                        </div>
+
+                    </div>
+                </section>
+            </div>
+
+            <!-- Bottom Section: Saved Invoices Database Logs -->
+            <section class="history-panel card" id="history-section">
+                <div class="card-header">
+                    <div class="card-header-title">
+                        <i data-lucide="database"></i>
+                        <h3>Saved Invoices Log</h3>
+                    </div>
+                    <div class="search-box">
+                        <i data-lucide="search" class="search-icon"></i>
+                        <input type="text" id="log-search-input" onkeyup="filterHistoryLog()" placeholder="Search by customer, driver or ride ID...">
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="history-table" id="history-table">
+                        <thead>
+                            <tr>
+                                <th>Ride ID</th>
+                                <th>Customer</th>
+                                <th>Captain</th>
+                                <th>Date & Time</th>
+                                <th>Distance</th>
+                                <th>Total Bill</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body">
+                            <!-- Injected by Javascript -->
+                            <tr class="empty-state">
+                                <td colspan="7" class="text-center">
+                                    <div class="empty-icon-wrap">
+                                        <i data-lucide="archive-x"></i>
+                                    </div>
+                                    <p>No ride records saved in the database yet.</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Leaflet Map JS CDN -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Main Application Script -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+.env
+rides.db
+__pycache__/
+*.pyc
+*.log
+.gemini/
