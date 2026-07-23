@@ -1,7 +1,6 @@
 import sqlite3
 import datetime
 import traceback
-import oracledb
 import config
 from supabase import create_client, Client
 
@@ -35,6 +34,7 @@ def get_db_connection():
             return conn, 'sqlite'
     elif config.DB_TYPE == 'oracle':
         try:
+            import oracledb
             # Connect to Oracle Database in Thin mode
             conn = oracledb.connect(
                 user=config.ORACLE_USER,
