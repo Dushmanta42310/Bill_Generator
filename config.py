@@ -12,6 +12,9 @@ DB_TYPE = os.environ.get('DB_TYPE', 'sqlite')
 SUPABASE_URL = os.environ.get('SUPABASE_URL')
 SUPABASE_KEY = os.environ.get('SUPABASE_KEY')
 
+# Generic PostgreSQL / Railway Database URL
+DATABASE_URL = os.environ.get('DATABASE_URL')
+
 # Oracle Database Configuration
 ORACLE_USER = os.environ.get('ORACLE_USER', 'system')
 ORACLE_PASSWORD = os.environ.get('ORACLE_PASSWORD', 'your_password')
@@ -22,6 +25,6 @@ SQLITE_DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'rides
 
 # Flask Configuration
 SECRET_KEY = os.environ.get('SECRET_KEY', 'rapido_bill_generator_secret_key')
-DEBUG = True
-PORT = 5000
+DEBUG = os.environ.get('FLASK_DEBUG', 'False').lower() in ['true', '1']
+PORT = int(os.environ.get('PORT', 5000))
 HOST = '0.0.0.0'
