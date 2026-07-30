@@ -653,6 +653,14 @@ input:checked + .slider:before {
     padding-bottom: 15px;
 }
 
+.rapido-brand img {
+    height: 36px;
+    max-height: 40px;
+    width: auto;
+    object-fit: contain;
+    display: block;
+}
+
 .border-bottom {
     border-bottom: 2px solid #f3f4f6;
 }
