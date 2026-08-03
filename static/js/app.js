@@ -38,6 +38,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // 6. Handle autocomplete search triggers
     setupSearchAutoComplete();
     setupNominatimAutocomplete();
+
+    // 7. Initialize Daily Travel Timeline Module
+    initTimelineModule();
 });
 
 // Set default datetime value in format local datetime inputs expect: YYYY-MM-DDThh:mm
@@ -1075,4 +1078,355 @@ function copyShareLink(rideId) {
     } else {
         prompt("Copy this share link for your client:", shareUrl);
     }
+}
+
+// ==========================================================================
+// DAILY TIMELINE MODULE
+// ==========================================================================
+let timelineMap = null;
+let timelineMapLayers = [];
+let currentTimelineDate = '2026-07-01';
+let currentTimelineLogs = [];
+
+function initTimelineModule() {
+    // 1. Set current date input
+    const dateInput = document.getElementById('timeline-date-input');
+    if (dateInput) {
+        dateInput.value = currentTimelineDate;
+        updateFormattedTimelineDate(currentTimelineDate);
+    }
+
+    // 2. Init Timeline Map
+    const mapContainer = document.getElementById('timeline-map-container');
+    if (mapContainer && typeof L !== 'undefined') {
+        timelineMap = L.map('timeline-map-container').setView([28.62, 77.30], 10);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            maxZoom: 19,
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(timelineMap);
+    }
+
+    // 3. Fetch initial timeline data
+    loadTimelineData(currentTimelineDate);
+}
+
+function updateFormattedTimelineDate(dateStr) {
+    if (!dateStr) return;
+    const dt = new Date(dateStr + 'T00:00:00');
+    const options = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' };
+    const formatted = dt.toLocaleDateString('en-GB', options);
+    const display = document.getElementById('timeline-date-formatted');
+    if (display) display.innerText = formatted;
+}
+
+function changeTimelineDate(deltaDays) {
+    const dt = new Date(currentTimelineDate + 'T00:00:00');
+    dt.setDate(dt.getDate() + deltaDays);
+    const offset = dt.getTimezoneOffset() * 60000;
+    const newDateStr = (new Date(dt - offset)).toISOString().split('T')[0];
+    
+    currentTimelineDate = newDateStr;
+    const dateInput = document.getElementById('timeline-date-input');
+    if (dateInput) dateInput.value = currentTimelineDate;
+    updateFormattedTimelineDate(currentTimelineDate);
+    loadTimelineData(currentTimelineDate);
+}
+
+function onTimelineDateSelected(val) {
+    if (!val) return;
+    currentTimelineDate = val;
+    updateFormattedTimelineDate(currentTimelineDate);
+    loadTimelineData(currentTimelineDate);
+}
+
+function loadTimelineData(dateStr) {
+    fetch(`/api/timeline?date=${dateStr}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                currentTimelineLogs = data.logs || [];
+                renderTimelineUI(currentTimelineLogs);
+            }
+        })
+        .catch(err => console.error("Error loading timeline: ", err));
+}
+
+function renderTimelineUI(logs) {
+    renderModeSummaryChips(logs);
+    renderTimelineFeed(logs);
+    renderTimelineMap(logs);
+}
+
+function renderModeSummaryChips(logs) {
+    const container = document.getElementById('mode-summary-container');
+    if (!container) return;
+
+    const modeStats = {
+        train: { km: 0, min: 0, icon: '🚆' },
+        car: { km: 0, min: 0, icon: '🚗' },
+        bike: { km: 0, min: 0, icon: '🏍️' },
+        walk: { km: 0, min: 0, icon: '🚶' },
+        missing: { km: 0, min: 0, icon: '❓' }
+    };
+
+    let totalKm = 0;
+    let totalMin = 0;
+
+    logs.forEach(log => {
+        const m = (log.mode || 'other').toLowerCase();
+        const dist = parseFloat(log.distance_km || 0);
+        const dur = parseFloat(log.duration_min || 0);
+        totalKm += dist;
+        totalMin += dur;
+
+        if (modeStats[m]) {
+            modeStats[m].km += dist;
+            modeStats[m].min += dur;
+        } else if (dist > 0) {
+            if (!modeStats.car) modeStats.car = { km: 0, min: 0, icon: '🚗' };
+            modeStats.car.km += dist;
+            modeStats.car.min += dur;
+        }
+    });
+
+    const totalBadge = document.getElementById('timeline-total-stats');
+    if (totalBadge) {
+        const h = Math.floor(totalMin / 60);
+        const m = Math.round(totalMin % 60);
+        const durStr = h > 0 ? `${h} hr ${m} min` : `${m} min`;
+        totalBadge.innerText = `${totalKm.toFixed(1)} km · ${durStr}`;
+    }
+
+    let html = '';
+    for (const [key, stat] of Object.entries(modeStats)) {
+        if (stat.km > 0 || stat.min > 0) {
+            const h = Math.floor(stat.min / 60);
+            const m = Math.round(stat.min % 60);
+            const durText = h > 0 ? `${h} hr ${m} min` : `${m} min`;
+            html += `
+                <div class="mode-chip">
+                    <span class="icon">${stat.icon}</span>
+                    <span class="val">${stat.km.toFixed(0)} km</span>
+                    <span class="time">${durText}</span>
+                </div>
+            `;
+        }
+    }
+
+    if (!html) {
+        html = `<span style="font-size:13px; color:var(--text-muted);">No travel legs recorded for this date. Click "+ Add Travel" to log a trip.</span>`;
+    }
+
+    container.innerHTML = html;
+}
+
+function renderTimelineFeed(logs) {
+    const feed = document.getElementById('timeline-feed');
+    if (!feed) return;
+
+    if (!logs || logs.length === 0) {
+        feed.innerHTML = `
+            <div style="text-align:center; padding:30px; color:var(--text-muted);">
+                <p style="font-size:14px; margin-bottom:10px;">No timeline records saved for this day.</p>
+                <button class="btn btn-primary btn-sm" onclick="openAddTravelModal()">
+                    + Add Travel Record
+                </button>
+            </div>
+        `;
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+        return;
+    }
+
+    let html = '';
+    logs.forEach(item => {
+        const isStop = item.log_type === 'stop';
+        const isMissing = item.mode === 'missing' || item.title === 'Missing travel';
+
+        if (isMissing) {
+            html += `
+                <div class="timeline-item">
+                    <div class="timeline-marker missing-marker">?</div>
+                    <div class="missing-travel-card">
+                        <div class="timeline-item-header">
+                            <span class="title">Missing travel</span>
+                            <span class="timeline-item-time">${item.start_time || ''} - ${item.end_time || ''}</span>
+                        </div>
+                        <div class="timeline-item-subtitle">${item.distance_km || 0} km · ${item.duration_min || 0} min</div>
+                        <button class="btn-add-travel" onclick="openAddTravelModal('${item.log_id}')">
+                            <i data-lucide="plus"></i> Add travel
+                        </button>
+                    </div>
+                </div>
+            `;
+        } else if (isStop) {
+            html += `
+                <div class="timeline-item">
+                    <div class="timeline-marker stop-marker">📍</div>
+                    <div class="timeline-content">
+                        <div class="timeline-item-header">
+                            <span class="timeline-item-title">${item.title}</span>
+                            <span class="timeline-item-time">${item.end_time ? 'Left at ' + item.end_time : ''}</span>
+                        </div>
+                        <div class="timeline-item-subtitle">${item.subtitle || item.pickup_address || ''}</div>
+                    </div>
+                </div>
+            `;
+        } else {
+            let icon = '🚗';
+            if (item.mode === 'train') icon = '🚆';
+            else if (item.mode === 'bike') icon = '🏍️';
+            else if (item.mode === 'walk') icon = '🚶';
+
+            html += `
+                <div class="timeline-item">
+                    <div class="timeline-marker">${icon}</div>
+                    <div class="timeline-content">
+                        <div class="timeline-item-header">
+                            <span class="timeline-item-title">${item.title}</span>
+                            <span class="timeline-item-time">${item.start_time || ''} - ${item.end_time || ''}</span>
+                        </div>
+                        <div class="timeline-item-subtitle">${item.subtitle || (item.pickup_address ? item.pickup_address + ' ➔ ' + item.drop_address : '')}</div>
+                        <div class="timeline-item-meta">
+                            <span>${item.distance_km || 0} km</span>
+                            <span>·</span>
+                            <span>${item.duration_min || 0} mins</span>
+                            <button onclick="deleteTimelineItem('${item.log_id}')" style="margin-left:auto; background:none; border:none; color:#e74c3c; cursor:pointer;" title="Delete">🗑️</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    });
+
+    feed.innerHTML = html;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function renderTimelineMap(logs) {
+    if (!timelineMap) return;
+
+    timelineMapLayers.forEach(l => timelineMap.removeLayer(l));
+    timelineMapLayers = [];
+
+    const latLngs = [];
+
+    logs.forEach(log => {
+        if (log.pickup_lat && log.pickup_lng) {
+            const pt1 = [parseFloat(log.pickup_lat), parseFloat(log.pickup_lng)];
+            latLngs.push(pt1);
+
+            const marker = L.marker(pt1, { title: log.title })
+                .addTo(timelineMap)
+                .bindPopup(`<b>${log.title}</b><br>${log.subtitle || log.pickup_address || ''}`);
+            timelineMapLayers.push(marker);
+
+            if (log.drop_lat && log.drop_lng) {
+                const pt2 = [parseFloat(log.drop_lat), parseFloat(log.drop_lng)];
+                latLngs.push(pt2);
+
+                let lineStyle = { color: '#3498db', weight: 4, opacity: 0.8 };
+                if (log.mode === 'missing') lineStyle = { color: '#e74c3c', weight: 3, dashArray: '5, 8' };
+                if (log.mode === 'train') lineStyle = { color: '#9b59b6', weight: 5 };
+
+                const line = L.polyline([pt1, pt2], lineStyle).addTo(timelineMap);
+                timelineMapLayers.push(line);
+            }
+        }
+    });
+
+    if (latLngs.length > 0) {
+        const bounds = L.latLngBounds(latLngs);
+        timelineMap.fitBounds(bounds, { padding: [30, 30] });
+    } else {
+        timelineMap.setView([28.62, 77.30], 10);
+    }
+}
+
+function switchTimelineSubTab(tabName) {
+    const tabs = document.querySelectorAll('.timeline-tabs .t-tab');
+    tabs.forEach(t => t.classList.remove('active'));
+    if (event && event.target) {
+        event.target.classList.add('active');
+    }
+
+    const feedTitle = document.getElementById('timeline-feed-title');
+    if (feedTitle) feedTitle.innerText = `${tabName.charAt(0).toUpperCase() + tabName.slice(1)} Activity Log`;
+}
+
+function openAddTravelModal(logId = null) {
+    const modal = document.getElementById('add-travel-modal');
+    if (!modal) return;
+    
+    document.getElementById('modal_travel_date').value = currentTimelineDate;
+    document.getElementById('modal_log_id').value = logId || '';
+
+    if (logId) {
+        const item = currentTimelineLogs.find(l => l.log_id === logId);
+        if (item) {
+            document.getElementById('modal_title').value = item.title || '';
+            document.getElementById('modal_start_time').value = item.start_time || '';
+            document.getElementById('modal_end_time').value = item.end_time || '';
+            document.getElementById('modal_distance_km').value = item.distance_km || 0;
+            document.getElementById('modal_duration_min').value = item.duration_min || 0;
+            document.getElementById('modal_pickup').value = item.pickup_address || '';
+            document.getElementById('modal_drop').value = item.drop_address || '';
+            document.getElementById('modal_log_type').value = item.log_type || 'travel';
+            document.getElementById('modal_mode').value = item.mode || 'car';
+        }
+    } else {
+        document.getElementById('modal_title').value = '';
+        document.getElementById('modal_pickup').value = '';
+        document.getElementById('modal_drop').value = '';
+    }
+
+    modal.classList.remove('hidden');
+}
+
+function closeAddTravelModal() {
+    const modal = document.getElementById('add-travel-modal');
+    if (modal) modal.classList.add('hidden');
+}
+
+function handleSaveTravelModal(e) {
+    e.preventDefault();
+    const payload = {
+        log_id: document.getElementById('modal_log_id').value,
+        travel_date: document.getElementById('modal_travel_date').value,
+        start_time: document.getElementById('modal_start_time').value,
+        end_time: document.getElementById('modal_end_time').value,
+        log_type: document.getElementById('modal_log_type').value,
+        mode: document.getElementById('modal_mode').value,
+        title: document.getElementById('modal_title').value,
+        distance_km: parseFloat(document.getElementById('modal_distance_km').value || 0),
+        duration_min: parseFloat(document.getElementById('modal_duration_min').value || 0),
+        pickup_address: document.getElementById('modal_pickup').value,
+        drop_address: document.getElementById('modal_drop').value
+    };
+
+    fetch('/api/timeline', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            closeAddTravelModal();
+            loadTimelineData(currentTimelineDate);
+        } else {
+            alert('Error saving leg: ' + data.error);
+        }
+    })
+    .catch(err => console.error('Save error: ', err));
+}
+
+function deleteTimelineItem(logId) {
+    if (!confirm('Are you sure you want to remove this travel leg?')) return;
+    fetch(`/api/timeline/${logId}`, { method: 'DELETE' })
+        .then(res => res.json())
+        .then(data => {
+            if (data.success) {
+                loadTimelineData(currentTimelineDate);
+            }
+        });
 }

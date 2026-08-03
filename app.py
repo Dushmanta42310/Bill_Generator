@@ -96,6 +96,27 @@ def create_ride():
         # Save to DB
         db.save_ride(data)
         
+        # Auto sync ride to daily timeline
+        try:
+            time_str = str(data.get('time_of_ride', ''))
+            travel_date = time_str.split('T')[0] if 'T' in time_str else (time_str.split(' ')[0] if ' ' in time_str else '2026-07-01')
+            time_part = time_str.split('T')[1][:5] if 'T' in time_str and len(time_str.split('T')) > 1 else '09:00 AM'
+            db.save_travel_log({
+                'travel_date': travel_date,
+                'start_time': time_part,
+                'log_type': 'travel',
+                'title': f"Ride with {data.get('captain_name', 'Captain')}",
+                'subtitle': f"Invoice #{data.get('invoice_no', '')}",
+                'mode': 'car',
+                'distance_km': data.get('distance_km', 0),
+                'duration_min': data.get('duration_min', 0),
+                'pickup_address': data.get('pickup_address', ''),
+                'drop_address': data.get('drop_address', ''),
+                'ride_id': data.get('ride_id', '')
+            })
+        except Exception as sync_err:
+            print(f"Timeline auto-sync warning: {sync_err}")
+
         return jsonify({
             'success': True,
             'message': 'Ride saved successfully',
@@ -122,6 +143,68 @@ def delete_ride(ride_id):
             return jsonify({
                 'success': False,
                 'error': 'Ride not found or could not be deleted'
+            }), 404
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/timeline', methods=['GET'])
+def get_timeline():
+    """API endpoint to retrieve daily travel timeline logs."""
+    try:
+        travel_date = request.args.get('date', '2026-07-01')
+        logs = db.get_timeline_by_date(travel_date)
+        return jsonify({
+            'success': True,
+            'date': travel_date,
+            'count': len(logs),
+            'logs': logs
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/timeline', methods=['POST'])
+def save_timeline():
+    """API endpoint to add or update a travel timeline record."""
+    try:
+        data = request.get_json()
+        if not data or not data.get('travel_date') or not data.get('title'):
+            return jsonify({
+                'success': False,
+                'error': 'Missing required fields: travel_date, title'
+            }), 400
+
+        log_id = db.save_travel_log(data)
+        return jsonify({
+            'success': True,
+            'message': 'Timeline log saved successfully',
+            'log_id': log_id
+        }), 201
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/timeline/<log_id>', methods=['DELETE'])
+def delete_timeline(log_id):
+    """API endpoint to delete a timeline record."""
+    try:
+        success = db.delete_travel_log(log_id)
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Timeline entry deleted successfully'
+            }), 200
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Entry not found'
             }), 404
     except Exception as e:
         return jsonify({
