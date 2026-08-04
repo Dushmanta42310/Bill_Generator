@@ -76,7 +76,102 @@
                 </div>
             </header>
 
-            <div class="dashboard-grid">
+            <!-- Google Maps Style Daily Travel Timeline Tracker (Integrated Dashboard Top View) -->
+            <section class="timeline-panel card" id="timeline-section">
+                <!-- Header -->
+                <div class="gmaps-timeline-header">
+                    <div class="gmaps-header-left">
+                        <h2>Timeline</h2>
+                    </div>
+                    <div class="gmaps-header-right">
+                        <button class="gmaps-icon-btn" title="Cloud Sync"><i data-lucide="cloud"></i></button>
+                        <button class="gmaps-icon-btn" title="Options"><i data-lucide="more-vertical"></i></button>
+                        <button class="gmaps-icon-btn" title="Close"><i data-lucide="x"></i></button>
+                    </div>
+                </div>
+
+                <!-- Google Maps Timeline Tabs -->
+                <div class="gmaps-timeline-tabs">
+                    <button class="gmaps-tab active" onclick="switchTimelineSubTab('day')">
+                        <span>Day</span>
+                        <div class="tab-indicator"></div>
+                    </button>
+                    <button class="gmaps-tab" onclick="switchTimelineSubTab('trips')">
+                        <span>Trips</span>
+                        <div class="tab-indicator"></div>
+                    </button>
+                    <button class="gmaps-tab" onclick="switchTimelineSubTab('insights')">
+                        <span>Insights</span>
+                        <div class="tab-indicator"></div>
+                    </button>
+                    <button class="gmaps-tab" onclick="switchTimelineSubTab('places')">
+                        <span>Places</span>
+                        <div class="tab-indicator"></div>
+                    </button>
+                    <div class="header-actions-right">
+                        <button class="btn btn-primary btn-sm" onclick="openAddTravelModal()">
+                            <i data-lucide="plus"></i>
+                            <span>Add Travel</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Timeline Body Container -->
+                <div class="gmaps-timeline-body">
+                    <!-- Leaflet Google Map Container -->
+                    <div class="gmaps-map-wrapper">
+                        <div id="timeline-map-container"></div>
+                        <!-- Floating Map Controls -->
+                        <div class="floating-map-controls">
+                            <button class="floating-btn" onclick="recenterTimelineMap()" title="Target Location">
+                                <i data-lucide="crosshair"></i>
+                            </button>
+                            <button class="floating-btn" onclick="toggleMapLayers()" title="Map Layers">
+                                <i data-lucide="layers"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Details Sheet Panel -->
+                    <div class="gmaps-sheet-panel">
+                        <div class="drag-handle-bar">
+                            <div class="drag-pill"></div>
+                        </div>
+
+                        <!-- Date Picker Control Bar -->
+                        <div class="gmaps-date-selector">
+                            <button class="date-arrow-btn" onclick="changeTimelineDate(-1)" title="Previous Day">
+                                <i data-lucide="chevron-left"></i>
+                            </button>
+                            <div class="date-dropdown-wrap">
+                                <span id="timeline-date-formatted">Wed, 1 Jul 2026</span>
+                                <i data-lucide="chevron-down" class="dropdown-arrow"></i>
+                                <input type="date" id="timeline-date-input" value="2026-07-01" onchange="onTimelineDateSelected(this.value)">
+                            </div>
+                            <button class="date-arrow-btn" onclick="changeTimelineDate(1)" title="Next Day">
+                                <i data-lucide="chevron-right"></i>
+                            </button>
+                        </div>
+
+                        <!-- Horizontal Mode Stats Summary Row -->
+                        <div class="gmaps-mode-summary" id="mode-summary-container">
+                            <!-- Injected dynamically by JS -->
+                        </div>
+
+                        <!-- Vertical Timeline List Feed -->
+                        <div class="gmaps-timeline-feed-wrap">
+                            <div class="gmaps-feed-list" id="timeline-feed">
+                                <!-- Injected dynamically by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Floating Edit Pencil FAB -->
+                        <button class="gmaps-fab-edit" onclick="openAddTravelModal()" title="Add / Edit Leg">
+                            <i data-lucide="pencil"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
                 <!-- Left Pane: Configuration & Map -->
                 <section class="config-panel card">
                     <div class="card-header">
@@ -600,233 +695,7 @@
                 </section>
             </div>
 
-            <!-- Middle Section: Google Maps Style Daily Travel Timeline Tracker -->
-            <section class="timeline-panel card" id="timeline-section">
-                <!-- Mobile/Desktop View Header -->
-                <div class="gmaps-timeline-header">
-                    <div class="gmaps-header-left">
-                        <h2>Timeline</h2>
-                    </div>
-                    <div class="gmaps-header-right">
-                        <button class="gmaps-icon-btn" title="Cloud Sync"><i data-lucide="cloud"></i></button>
-                        <button class="gmaps-icon-btn" title="Options"><i data-lucide="more-vertical"></i></button>
-                        <button class="gmaps-icon-btn" title="Close"><i data-lucide="x"></i></button>
-                    </div>
-                </div>
-
-                <!-- Google Maps Timeline Tabs -->
-                <div class="gmaps-timeline-tabs">
-                    <button class="gmaps-tab active" onclick="switchTimelineSubTab('day')">
-                        <span>Day</span>
-                        <div class="tab-indicator"></div>
-                    </button>
-                    <button class="gmaps-tab" onclick="switchTimelineSubTab('trips')">
-                        <span>Trips</span>
-                        <div class="tab-indicator"></div>
-                    </button>
-                    <button class="gmaps-tab" onclick="switchTimelineSubTab('insights')">
-                        <span>Insights</span>
-                        <div class="tab-indicator"></div>
-                    </button>
-                    <button class="gmaps-tab" onclick="switchTimelineSubTab('places')">
-                        <span>Places</span>
-                        <div class="tab-indicator"></div>
-                    </button>
-                    <div class="header-actions-right">
-                        <button class="btn btn-secondary btn-sm" onclick="toggleMobilePhonePreview()">
-                            <i data-lucide="smartphone"></i>
-                            <span>Mobile View</span>
-                        </button>
-                        <button class="btn btn-primary btn-sm" onclick="openAddTravelModal()">
-                            <i data-lucide="plus"></i>
-                            <span>Add Travel</span>
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Timeline Body Container (Split Desktop View) -->
-                <div class="gmaps-timeline-body">
-                    <!-- Leaflet Google Map Container -->
-                    <div class="gmaps-map-wrapper">
-                        <div id="timeline-map-container"></div>
-                        <!-- Floating Map Controls -->
-                        <div class="floating-map-controls">
-                            <button class="floating-btn" onclick="recenterTimelineMap()" title="Target Location">
-                                <i data-lucide="crosshair"></i>
-                            </button>
-                            <button class="floating-btn" onclick="toggleMapLayers()" title="Map Layers">
-                                <i data-lucide="layers"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Bottom Sheet / Feed Details Panel -->
-                    <div class="gmaps-sheet-panel">
-                        <div class="drag-handle-bar">
-                            <div class="drag-pill"></div>
-                        </div>
-
-                        <!-- Date Picker Control Bar -->
-                        <div class="gmaps-date-selector">
-                            <button class="date-arrow-btn" onclick="changeTimelineDate(-1)" title="Previous Day">
-                                <i data-lucide="chevron-left"></i>
-                            </button>
-                            <div class="date-dropdown-wrap">
-                                <span id="timeline-date-formatted">Wed, 1 Jul 2026</span>
-                                <i data-lucide="chevron-down" class="dropdown-arrow"></i>
-                                <input type="date" id="timeline-date-input" value="2026-07-01" onchange="onTimelineDateSelected(this.value)">
-                            </div>
-                            <button class="date-arrow-btn" onclick="changeTimelineDate(1)" title="Next Day">
-                                <i data-lucide="chevron-right"></i>
-                            </button>
-                        </div>
-
-                        <!-- Horizontal Mode Stats Summary Row -->
-                        <div class="gmaps-mode-summary" id="mode-summary-container">
-                            <!-- Injected dynamically by JS -->
-                        </div>
-
-                        <!-- Vertical Timeline List Feed -->
-                        <div class="gmaps-timeline-feed-wrap">
-                            <div class="gmaps-feed-list" id="timeline-feed">
-                                <!-- Injected dynamically by JS -->
-                            </div>
-                        </div>
-
-                        <!-- Floating Edit Pencil FAB -->
-                        <button class="gmaps-fab-edit" onclick="openAddTravelModal()" title="Add / Edit Leg">
-                            <i data-lucide="pencil"></i>
-                        </button>
-                    </div>
-                </div>
-            </section>
-
             <!-- Bottom Section: Saved Invoices Database Logs -->
-            <section class="history-panel card" id="history-section">
-                <div class="card-header">
-                    <div class="card-header-title">
-                        <i data-lucide="database"></i>
-                        <h3>Saved Invoices Log</h3>
-                    </div>
-                    <div class="search-box">
-                        <i data-lucide="search" class="search-icon"></i>
-                        <input type="text" id="log-search-input" onkeyup="filterHistoryLog()" placeholder="Search by customer, driver or ride ID...">
-                    </div>
-                </div>
-
-                <div class="table-container">
-                    <table class="history-table" id="history-table">
-                        <thead>
-                            <tr>
-                                <th>Ride ID</th>
-                                <th>Customer</th>
-                                <th>Captain</th>
-                                <th>Date & Time</th>
-                                <th>Distance</th>
-                                <th>Total Bill</th>
-                                <th class="text-center">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="history-table-body">
-                            <!-- Injected by Javascript -->
-                            <tr class="empty-state">
-                                <td colspan="7" class="text-center">
-                                    <div class="empty-icon-wrap">
-                                        <i data-lucide="archive-x"></i>
-                                    </div>
-                                    <p>No ride records saved in the database yet.</p>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-        </main>
-    </div>
-
-    <!-- Mobile Phone Mockup Overlay Modal (Google Maps Phone View) -->
-    <div id="mobile-phone-modal" class="modal-overlay hidden">
-        <div class="phone-frame-wrapper">
-            <button class="phone-close-btn" onclick="toggleMobilePhonePreview()" title="Close Phone View">
-                <i data-lucide="x"></i>
-            </button>
-            <div class="phone-device">
-                <!-- Phone Top Notch & Status Bar -->
-                <div class="phone-status-bar">
-                    <span class="status-time">23:02</span>
-                    <div class="status-icons">
-                        <i data-lucide="video" style="width:12px; height:12px;"></i>
-                        <span class="status-speed">9.00 KB/s</span>
-                        <i data-lucide="wifi" style="width:12px; height:12px;"></i>
-                        <span class="status-volte">VoLTE</span>
-                        <div class="battery-badge">84</div>
-                    </div>
-                </div>
-
-                <!-- Google Maps Header -->
-                <div class="phone-gmaps-header">
-                    <h2>Timeline</h2>
-                    <div class="header-right-icons">
-                        <i data-lucide="cloud"></i>
-                        <i data-lucide="more-vertical"></i>
-                        <i data-lucide="x" onclick="toggleMobilePhonePreview()"></i>
-                    </div>
-                </div>
-
-                <!-- Tabs -->
-                <div class="phone-tabs">
-                    <button class="p-tab active">Day<div class="p-tab-indicator"></div></button>
-                    <button class="p-tab">Trips</button>
-                    <button class="p-tab">Insights</button>
-                    <button class="p-tab">Places</button>
-                </div>
-
-                <!-- Map Snapshot Area -->
-                <div class="phone-map-container">
-                    <div id="mobile-timeline-map"></div>
-                    <div class="phone-map-fab target-fab"><i data-lucide="crosshair"></i></div>
-                    <div class="phone-map-fab layers-fab"><i data-lucide="layers"></i></div>
-                </div>
-
-                <!-- Bottom Sheet Sheet Scroll Content -->
-                <div class="phone-bottom-sheet">
-                    <div class="phone-drag-handle"></div>
-
-                    <!-- Date picker bar -->
-                    <div class="phone-date-bar">
-                        <i data-lucide="chevron-left" onclick="changeTimelineDate(-1)"></i>
-                        <div class="p-date-select">
-                            <span id="phone-date-text">Wed, 1 Jul 2026</span>
-                            <i data-lucide="chevron-down"></i>
-                        </div>
-                        <i data-lucide="chevron-right" onclick="changeTimelineDate(1)"></i>
-                    </div>
-
-                    <!-- Summary Chips -->
-                    <div class="phone-mode-summary" id="phone-mode-summary-container">
-                        <!-- Cloned stats -->
-                    </div>
-
-                    <!-- List Feed -->
-                    <div class="phone-feed-list" id="phone-timeline-feed">
-                        <!-- Cloned feed -->
-                    </div>
-
-                    <!-- Floating Edit FAB -->
-                    <button class="phone-fab-pencil" onclick="openAddTravelModal()">
-                        <i data-lucide="pencil"></i>
-                    </button>
-                </div>
-
-                <!-- Android Bottom Navigation Bar Bar -->
-                <div class="phone-navbar">
-                    <div class="nav-bar-icon">|||</div>
-                    <div class="nav-bar-icon">▢</div>
-                    <div class="nav-bar-icon">‹</div>
-                </div>
-            </div>
-        </div>
-    </div>
 
     <!-- Modal for Adding / Editing Travel Legs -->
     <div id="add-travel-modal" class="modal-overlay hidden">
