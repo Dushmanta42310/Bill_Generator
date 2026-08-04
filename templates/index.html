@@ -14,12 +14,15 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
     
     <!-- Custom Styles -->
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}?v=20260804_exact_stack">
 </head>
 <body>
     <div class="app-container">
+        <!-- Mobile Sidebar Backdrop Overlay -->
+        <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="toggleSidebar()"></div>
+
         <!-- Sidebar Navigation -->
-        <aside class="sidebar">
+        <aside class="sidebar" id="app-sidebar">
             <div class="logo-area">
                 <div class="emblem">
                     <svg viewBox="0 0 24 24" width="24" height="24">
@@ -27,6 +30,9 @@
                     </svg>
                 </div>
                 <h2>RAPID-GEN</h2>
+                <button class="mobile-sidebar-close" onclick="toggleSidebar()" title="Close Navigation">
+                    <i data-lucide="x"></i>
+                </button>
             </div>
             
             <nav class="sidebar-nav">
@@ -81,12 +87,33 @@
                 </div>
             </header>
 
+            <!-- Mobile Top Quick Navigation Bar (Horizontal Row for Phone View) -->
+            <nav class="mobile-nav-bar">
+                <a href="#dashboard" class="m-nav-item active">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#timeline-section" class="m-nav-item">
+                    <i data-lucide="navigation"></i>
+                    <span>Daily Timeline</span>
+                </a>
+                <a href="#history-section" class="m-nav-item">
+                    <i data-lucide="history"></i>
+                    <span>Ride Logs</span>
+                </a>
+                <a href="https://github.com" target="_blank" class="m-nav-item">
+                    <i data-lucide="help-circle"></i>
+                    <span>Documentation</span>
+                </a>
+            </nav>
+
             <!-- Google Maps Style Daily Travel Timeline Tracker (Integrated Dashboard Top View) -->
             <section class="timeline-panel card" id="timeline-section">
                 <!-- Header -->
                 <div class="gmaps-timeline-header">
                     <div class="gmaps-header-left">
                         <h2>Timeline</h2>
+                        <span class="live-clock-badge" id="live-clock-badge"></span>
                     </div>
                     <div class="gmaps-header-right">
                         <button class="gmaps-icon-btn" title="Cloud Sync"><i data-lucide="cloud"></i></button>
@@ -98,7 +125,10 @@
                 <!-- Google Maps Timeline Tabs -->
                 <div class="gmaps-timeline-tabs">
                     <button class="gmaps-tab active" onclick="switchTimelineSubTab('day')">
-                        <span>Day</span>
+                        <div class="tab-label-wrap">
+                            <i data-lucide="calendar" style="width:16px; height:16px;"></i>
+                            <span>Day</span>
+                        </div>
                         <div class="tab-indicator"></div>
                     </button>
                     <button class="gmaps-tab" onclick="switchTimelineSubTab('trips')">
@@ -113,12 +143,6 @@
                         <span>Places</span>
                         <div class="tab-indicator"></div>
                     </button>
-                    <div class="header-actions-right">
-                        <button class="btn btn-primary btn-sm" onclick="openAddTravelModal()">
-                            <i data-lucide="plus"></i>
-                            <span>Add Travel</span>
-                        </button>
-                    </div>
                 </div>
 
                 <!-- Timeline Body Container -->
@@ -701,6 +725,47 @@
             </div>
 
             <!-- Bottom Section: Saved Invoices Database Logs -->
+            <section class="history-panel card" id="history-section">
+                <div class="card-header">
+                    <div class="card-header-title">
+                        <i data-lucide="database"></i>
+                        <h3>Saved Invoices Log</h3>
+                    </div>
+                    <div class="search-box">
+                        <i data-lucide="search" class="search-icon"></i>
+                        <input type="text" id="log-search-input" onkeyup="filterHistoryLog()" placeholder="Search by customer, driver or ride ID...">
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table class="history-table" id="history-table">
+                        <thead>
+                            <tr>
+                                <th>Ride ID</th>
+                                <th>Customer</th>
+                                <th>Captain</th>
+                                <th>Date & Time</th>
+                                <th>Distance</th>
+                                <th>Total Bill</th>
+                                <th class="text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body">
+                            <!-- Injected by Javascript -->
+                            <tr class="empty-state">
+                                <td colspan="7" class="text-center">
+                                    <div class="empty-icon-wrap">
+                                        <i data-lucide="archive-x"></i>
+                                    </div>
+                                    <p>No ride records saved in the database yet.</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
 
     <!-- Modal for Adding / Editing Travel Legs -->
     <div id="add-travel-modal" class="modal-overlay hidden">
@@ -786,6 +851,6 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     
     <!-- Main Application Script -->
-    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}?v=20260804_exact_stack"></script>
 </body>
 </html>

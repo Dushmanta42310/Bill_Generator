@@ -578,136 +578,141 @@ def delete_travel_log(log_id):
 
 def seed_sample_timeline():
     """
-    Seeds initial sample daily timeline records matching Wed, 1 Jul 2026 if no logs exist.
+    Seeds initial sample daily timeline records matching today's date and 2026-07-01 if no logs exist.
     """
     try:
-        existing = get_timeline_by_date('2026-07-01')
-        if existing:
-            return
-            
-        sample_logs = [
-            {
-                'log_id': 'LOG_20260701_01',
-                'travel_date': '2026-07-01',
-                'start_time': '09:00 AM',
-                'end_time': '09:27 AM',
-                'log_type': 'stop',
-                'title': 'Arun Pal',
-                'subtitle': '3/503, Sector 3, Vasundhara, Ghaziabad, UP',
-                'mode': 'other',
-                'distance_km': 0.0,
-                'duration_min': 27.0,
-                'pickup_address': '3/503, Sector 3, Vasundhara, Ghaziabad, U...',
-                'pickup_lat': 28.6644,
-                'pickup_lng': 77.3601
-            },
-            {
-                'log_id': 'LOG_20260701_02',
-                'travel_date': '2026-07-01',
-                'start_time': '09:27 AM',
-                'end_time': '09:41 AM',
-                'log_type': 'travel',
-                'title': 'Missing travel',
-                'subtitle': 'Unconfirmed travel leg',
-                'mode': 'missing',
-                'distance_km': 5.1,
-                'duration_min': 14.0,
-                'pickup_address': 'Sector 3, Vasundhara, Ghaziabad',
-                'drop_address': 'Metro Station Vaishali',
-                'pickup_lat': 28.6644,
-                'pickup_lng': 77.3601,
-                'drop_lat': 28.6472,
-                'drop_lng': 77.3400
-            },
-            {
-                'log_id': 'LOG_20260701_03',
-                'travel_date': '2026-07-01',
-                'start_time': '09:41 AM',
-                'end_time': '09:48 AM',
-                'log_type': 'stop',
-                'title': 'Vaishali',
-                'subtitle': 'Metro Station Vaishali, Madan Mohan Malviya Marg',
-                'mode': 'other',
-                'distance_km': 0.0,
-                'duration_min': 7.0,
-                'pickup_address': 'Metro Station Vaishali, Madan Mohan Malviya Marg',
-                'pickup_lat': 28.6472,
-                'pickup_lng': 77.3400
-            },
-            {
-                'log_id': 'LOG_20260701_04',
-                'travel_date': '2026-07-01',
-                'start_time': '09:48 AM',
-                'end_time': '11:23 AM',
-                'log_type': 'travel',
-                'title': 'Train Transit',
-                'subtitle': 'Blue Line Metro Leg 1',
-                'mode': 'train',
-                'distance_km': 42.0,
-                'duration_min': 95.0,
-                'pickup_address': 'Metro Station Vaishali',
-                'drop_address': 'Noida Sector 62',
-                'pickup_lat': 28.6472,
-                'pickup_lng': 77.3400,
-                'drop_lat': 28.6250,
-                'drop_lng': 77.3700
-            },
-            {
-                'log_id': 'LOG_20260701_05',
-                'travel_date': '2026-07-01',
-                'start_time': '01:15 PM',
-                'end_time': '02:30 PM',
-                'log_type': 'travel',
-                'title': 'Train Transit',
-                'subtitle': 'Intercity Line Leg 2',
-                'mode': 'train',
-                'distance_km': 42.0,
-                'duration_min': 75.0,
-                'pickup_address': 'Noida Sector 62',
-                'drop_address': 'Faridabad Railway Station',
-                'pickup_lat': 28.6250,
-                'pickup_lng': 77.3700,
-                'drop_lat': 28.4089,
-                'drop_lng': 77.3178
-            },
-            {
-                'log_id': 'LOG_20260701_06',
-                'travel_date': '2026-07-01',
-                'start_time': '04:30 PM',
-                'end_time': '05:13 PM',
-                'log_type': 'travel',
-                'title': 'Car Ride',
-                'subtitle': 'Expressway Drive',
-                'mode': 'car',
-                'distance_km': 25.0,
-                'duration_min': 43.0,
-                'pickup_address': 'Faridabad',
-                'drop_address': 'Godrej Nature Plus, Gurgaon',
-                'pickup_lat': 28.4089,
-                'pickup_lng': 77.3178,
-                'drop_lat': 28.3800,
-                'drop_lng': 77.0500
-            },
-            {
-                'log_id': 'LOG_20260701_07',
-                'travel_date': '2026-07-01',
-                'start_time': '05:13 PM',
-                'end_time': '08:00 PM',
-                'log_type': 'stop',
-                'title': 'Godrej Nature Plus, Gurgaon',
-                'subtitle': 'Sohna Road, Gurgaon, Haryana',
-                'mode': 'other',
-                'distance_km': 0.0,
-                'duration_min': 167.0,
-                'pickup_address': 'Godrej Nature Plus, Gurgaon',
-                'pickup_lat': 28.3800,
-                'pickup_lng': 77.0500
-            }
-        ]
+        today_str = datetime.date.today().isoformat()
+        dates_to_seed = ['2026-07-01', today_str]
         
-        for item in sample_logs:
-            save_travel_log(item)
-        print("Sample timeline logs for 2026-07-01 seeded successfully.")
+        for t_date in dates_to_seed:
+            existing = get_timeline_by_date(t_date)
+            if existing:
+                continue
+                
+            prefix = t_date.replace('-', '')
+            sample_logs = [
+                {
+                    'log_id': f'LOG_{prefix}_01',
+                    'travel_date': t_date,
+                    'start_time': '09:00 AM',
+                    'end_time': '09:27 AM',
+                    'log_type': 'stop',
+                    'title': 'Arun Pal',
+                    'subtitle': '3/503, Sector 3, Vasundhara, Ghaziabad, UP',
+                    'mode': 'other',
+                    'distance_km': 0.0,
+                    'duration_min': 27.0,
+                    'pickup_address': '3/503, Sector 3, Vasundhara, Ghaziabad, UP',
+                    'pickup_lat': 28.6644,
+                    'pickup_lng': 77.3601
+                },
+                {
+                    'log_id': f'LOG_{prefix}_02',
+                    'travel_date': t_date,
+                    'start_time': '09:27 AM',
+                    'end_time': '09:41 AM',
+                    'log_type': 'travel',
+                    'title': 'Missing travel',
+                    'subtitle': 'Unconfirmed travel leg',
+                    'mode': 'missing',
+                    'distance_km': 5.1,
+                    'duration_min': 14.0,
+                    'pickup_address': 'Sector 3, Vasundhara, Ghaziabad',
+                    'drop_address': 'Metro Station Vaishali',
+                    'pickup_lat': 28.6644,
+                    'pickup_lng': 77.3601,
+                    'drop_lat': 28.6472,
+                    'drop_lng': 77.3400
+                },
+                {
+                    'log_id': f'LOG_{prefix}_03',
+                    'travel_date': t_date,
+                    'start_time': '09:41 AM',
+                    'end_time': '09:48 AM',
+                    'log_type': 'stop',
+                    'title': 'Vaishali',
+                    'subtitle': 'Metro Station Vaishali, Madan Mohan Malviya Marg',
+                    'mode': 'other',
+                    'distance_km': 0.0,
+                    'duration_min': 7.0,
+                    'pickup_address': 'Metro Station Vaishali, Madan Mohan Malviya Marg',
+                    'pickup_lat': 28.6472,
+                    'pickup_lng': 77.3400
+                },
+                {
+                    'log_id': f'LOG_{prefix}_04',
+                    'travel_date': t_date,
+                    'start_time': '09:48 AM',
+                    'end_time': '11:23 AM',
+                    'log_type': 'travel',
+                    'title': 'Train Transit',
+                    'subtitle': 'Blue Line Metro Leg 1',
+                    'mode': 'train',
+                    'distance_km': 42.0,
+                    'duration_min': 95.0,
+                    'pickup_address': 'Metro Station Vaishali',
+                    'drop_address': 'Noida Sector 62',
+                    'pickup_lat': 28.6472,
+                    'pickup_lng': 77.3400,
+                    'drop_lat': 28.6250,
+                    'drop_lng': 77.3700
+                },
+                {
+                    'log_id': f'LOG_{prefix}_05',
+                    'travel_date': t_date,
+                    'start_time': '01:15 PM',
+                    'end_time': '02:30 PM',
+                    'log_type': 'travel',
+                    'title': 'Train Transit',
+                    'subtitle': 'Intercity Line Leg 2',
+                    'mode': 'train',
+                    'distance_km': 42.0,
+                    'duration_min': 75.0,
+                    'pickup_address': 'Noida Sector 62',
+                    'drop_address': 'Faridabad Railway Station',
+                    'pickup_lat': 28.6250,
+                    'pickup_lng': 77.3700,
+                    'drop_lat': 28.4089,
+                    'drop_lng': 77.3178
+                },
+                {
+                    'log_id': f'LOG_{prefix}_06',
+                    'travel_date': t_date,
+                    'start_time': '04:30 PM',
+                    'end_time': '05:13 PM',
+                    'log_type': 'travel',
+                    'title': 'Car Ride',
+                    'subtitle': 'Expressway Drive',
+                    'mode': 'car',
+                    'distance_km': 25.0,
+                    'duration_min': 43.0,
+                    'pickup_address': 'Faridabad',
+                    'drop_address': 'Godrej Nature Plus, Gurgaon',
+                    'pickup_lat': 28.4089,
+                    'pickup_lng': 77.3178,
+                    'drop_lat': 28.3800,
+                    'drop_lng': 77.0500
+                },
+                {
+                    'log_id': f'LOG_{prefix}_07',
+                    'travel_date': t_date,
+                    'start_time': '05:13 PM',
+                    'end_time': '08:00 PM',
+                    'log_type': 'stop',
+                    'title': 'Godrej Nature Plus, Gurgaon',
+                    'subtitle': 'Sohna Road, Gurgaon, Haryana',
+                    'mode': 'other',
+                    'distance_km': 0.0,
+                    'duration_min': 167.0,
+                    'pickup_address': 'Godrej Nature Plus, Gurgaon',
+                    'pickup_lat': 28.3800,
+                    'pickup_lng': 77.0500
+                }
+            ]
+            
+            for item in sample_logs:
+                save_travel_log(item)
+            print(f"Sample timeline logs for {t_date} seeded successfully.")
     except Exception as e:
         print(f"Error seeding timeline sample data: {e}")
 

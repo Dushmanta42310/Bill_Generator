@@ -55,9 +55,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Toggle Mobile Responsive Sidebar Drawer
 function toggleSidebar() {
-    const sidebar = document.querySelector('.sidebar');
+    const sidebar = document.getElementById('app-sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
     if (sidebar) {
         sidebar.classList.toggle('open');
+    }
+    if (backdrop) {
+        backdrop.classList.toggle('active');
     }
 }
 
@@ -1105,7 +1109,11 @@ let timelineMap = null;
 let mobileTimelineMap = null;
 let timelineMapLayers = [];
 let mobileTimelineMapLayers = [];
-let currentTimelineDate = '2026-07-01';
+
+// Initialize currentTimelineDate to dynamic local system date (YYYY-MM-DD)
+const _todayObj = new Date();
+const _tzOffset = _todayObj.getTimezoneOffset() * 60000;
+let currentTimelineDate = (new Date(_todayObj - _tzOffset)).toISOString().split('T')[0];
 let currentTimelineLogs = [];
 
 function initTimelineModule() {
@@ -1127,8 +1135,20 @@ function initTimelineModule() {
         }).addTo(timelineMap);
     }
 
-    // 3. Fetch initial timeline data
+    // 3. Start Live System Clock
+    updateLiveClock();
+    setInterval(updateLiveClock, 10000);
+
+    // 4. Fetch initial timeline data
     loadTimelineData(currentTimelineDate);
+}
+
+function updateLiveClock() {
+    const badge = document.getElementById('live-clock-badge');
+    if (!badge) return;
+    const now = new Date();
+    const opts = { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', hour12: true };
+    badge.innerText = now.toLocaleString('en-US', opts);
 }
 
 function updateFormattedTimelineDate(dateStr) {
