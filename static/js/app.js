@@ -1081,10 +1081,12 @@ function copyShareLink(rideId) {
 }
 
 // ==========================================================================
-// DAILY TIMELINE MODULE
+// DAILY TIMELINE MODULE (Google Maps Timeline UI Exact Implementation)
 // ==========================================================================
 let timelineMap = null;
+let mobileTimelineMap = null;
 let timelineMapLayers = [];
+let mobileTimelineMapLayers = [];
 let currentTimelineDate = '2026-07-01';
 let currentTimelineLogs = [];
 
@@ -1096,13 +1098,14 @@ function initTimelineModule() {
         updateFormattedTimelineDate(currentTimelineDate);
     }
 
-    // 2. Init Timeline Map
+    // 2. Init Leaflet Timeline Map with Google Maps Tile Layer
     const mapContainer = document.getElementById('timeline-map-container');
     if (mapContainer && typeof L !== 'undefined') {
-        timelineMap = L.map('timeline-map-container').setView([28.62, 77.30], 10);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            maxZoom: 19,
-            attribution: '&copy; OpenStreetMap'
+        timelineMap = L.map('timeline-map-container', { zoomControl: false }).setView([28.50, 77.20], 10);
+        L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+            attribution: '&copy; Google Maps'
         }).addTo(timelineMap);
     }
 
@@ -1115,8 +1118,12 @@ function updateFormattedTimelineDate(dateStr) {
     const dt = new Date(dateStr + 'T00:00:00');
     const options = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' };
     const formatted = dt.toLocaleDateString('en-GB', options);
+    
     const display = document.getElementById('timeline-date-formatted');
     if (display) display.innerText = formatted;
+    
+    const phoneDisplay = document.getElementById('phone-date-text');
+    if (phoneDisplay) phoneDisplay.innerText = formatted;
 }
 
 function changeTimelineDate(deltaDays) {
@@ -1145,6 +1152,12 @@ function loadTimelineData(dateStr) {
         .then(data => {
             if (data.success) {
                 currentTimelineLogs = data.logs || [];
+                // Sort logs chronologically by log_id or start_time
+                currentTimelineLogs.sort((a, b) => {
+                    const idA = a.log_id || '';
+                    const idB = b.log_id || '';
+                    return idA.localeCompare(idB);
+                });
                 renderTimelineUI(currentTimelineLogs);
             }
         })
@@ -1155,69 +1168,60 @@ function renderTimelineUI(logs) {
     renderModeSummaryChips(logs);
     renderTimelineFeed(logs);
     renderTimelineMap(logs);
+    
+    // Also sync mobile phone view if open
+    const phoneFeed = document.getElementById('phone-timeline-feed');
+    const phoneSummary = document.getElementById('phone-mode-summary-container');
+    if (phoneFeed && document.getElementById('timeline-feed')) {
+        phoneFeed.innerHTML = document.getElementById('timeline-feed').innerHTML;
+    }
+    if (phoneSummary && document.getElementById('mode-summary-container')) {
+        phoneSummary.innerHTML = document.getElementById('mode-summary-container').innerHTML;
+    }
 }
 
 function renderModeSummaryChips(logs) {
     const container = document.getElementById('mode-summary-container');
     if (!container) return;
 
-    const modeStats = {
-        train: { km: 0, min: 0, icon: '🚆' },
-        car: { km: 0, min: 0, icon: '🚗' },
-        bike: { km: 0, min: 0, icon: '🏍️' },
-        walk: { km: 0, min: 0, icon: '🚶' },
-        missing: { km: 0, min: 0, icon: '❓' }
-    };
-
-    let totalKm = 0;
-    let totalMin = 0;
-
-    logs.forEach(log => {
-        const m = (log.mode || 'other').toLowerCase();
-        const dist = parseFloat(log.distance_km || 0);
-        const dur = parseFloat(log.duration_min || 0);
-        totalKm += dist;
-        totalMin += dur;
-
-        if (modeStats[m]) {
-            modeStats[m].km += dist;
-            modeStats[m].min += dur;
-        } else if (dist > 0) {
-            if (!modeStats.car) modeStats.car = { km: 0, min: 0, icon: '🚗' };
-            modeStats.car.km += dist;
-            modeStats.car.min += dur;
-        }
-    });
-
-    const totalBadge = document.getElementById('timeline-total-stats');
-    if (totalBadge) {
-        const h = Math.floor(totalMin / 60);
-        const m = Math.round(totalMin % 60);
-        const durStr = h > 0 ? `${h} hr ${m} min` : `${m} min`;
-        totalBadge.innerText = `${totalKm.toFixed(1)} km · ${durStr}`;
-    }
-
     let html = '';
-    for (const [key, stat] of Object.entries(modeStats)) {
-        if (stat.km > 0 || stat.min > 0) {
-            const h = Math.floor(stat.min / 60);
-            const m = Math.round(stat.min % 60);
+
+    // Group travel legs matching exact Google Timeline cards layout
+    logs.forEach(log => {
+        if (log.log_type === 'travel' && log.mode !== 'missing') {
+            const dist = parseFloat(log.distance_km || 0);
+            const dur = parseFloat(log.duration_min || 0);
+            const h = Math.floor(dur / 60);
+            const m = Math.round(dur % 60);
             const durText = h > 0 ? `${h} hr ${m} min` : `${m} min`;
+            
+            let iconSvg = '<i data-lucide="car" style="width:20px; height:20px;"></i>';
+            if (log.mode === 'train') {
+                iconSvg = '<i data-lucide="train" style="width:20px; height:20px;"></i>';
+            } else if (log.mode === 'bike') {
+                iconSvg = '<i data-lucide="bike" style="width:20px; height:20px;"></i>';
+            } else if (log.mode === 'walk') {
+                iconSvg = '<i data-lucide="footprints" style="width:20px; height:20px;"></i>';
+            }
+
             html += `
-                <div class="mode-chip">
-                    <span class="icon">${stat.icon}</span>
-                    <span class="val">${stat.km.toFixed(0)} km</span>
-                    <span class="time">${durText}</span>
+                <div class="mode-stat-card">
+                    <div class="mode-icon-box">${iconSvg}</div>
+                    <div class="mode-text-details">
+                        <span class="dist">${dist.toFixed(0)} km</span>
+                        <span class="dur">${durText}</span>
+                    </div>
                 </div>
             `;
         }
-    }
+    });
 
     if (!html) {
-        html = `<span style="font-size:13px; color:var(--text-muted);">No travel legs recorded for this date. Click "+ Add Travel" to log a trip.</span>`;
+        html = `<span style="font-size:13px; color:#5f6368;">No mode legs logged. Click "+ Add Travel" to log.</span>`;
     }
 
     container.innerHTML = html;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
 }
 
 function renderTimelineFeed(logs) {
@@ -1226,8 +1230,8 @@ function renderTimelineFeed(logs) {
 
     if (!logs || logs.length === 0) {
         feed.innerHTML = `
-            <div style="text-align:center; padding:30px; color:var(--text-muted);">
-                <p style="font-size:14px; margin-bottom:10px;">No timeline records saved for this day.</p>
+            <div style="text-align:center; padding:30px; color:#5f6368;">
+                <p style="font-size:14px; margin-bottom:10px;">No activity logged for this date.</p>
                 <button class="btn btn-primary btn-sm" onclick="openAddTravelModal()">
                     + Add Travel Record
                 </button>
@@ -1244,53 +1248,58 @@ function renderTimelineFeed(logs) {
 
         if (isMissing) {
             html += `
-                <div class="timeline-item">
-                    <div class="timeline-marker missing-marker">?</div>
-                    <div class="missing-travel-card">
-                        <div class="timeline-item-header">
-                            <span class="title">Missing travel</span>
-                            <span class="timeline-item-time">${item.start_time || ''} - ${item.end_time || ''}</span>
+                <div class="gmaps-feed-node">
+                    <div class="node-icon-marker missing-icon">?</div>
+                    <div class="node-body">
+                        <div class="node-main-info">
+                            <span class="node-title missing-title">Missing travel</span>
+                            <span class="node-subtitle">${item.distance_km || 5.1} km · ${item.duration_min || 14} min</span>
+                            <span class="node-time">${item.start_time || '9:27 am'} – ${item.end_time || '9:41 am'}</span>
+                            <button class="btn-teal-add-travel" onclick="openAddTravelModal('${item.log_id}')">
+                                <i data-lucide="plus" style="width:14px; height:14px;"></i> Add travel
+                            </button>
                         </div>
-                        <div class="timeline-item-subtitle">${item.distance_km || 0} km · ${item.duration_min || 0} min</div>
-                        <button class="btn-add-travel" onclick="openAddTravelModal('${item.log_id}')">
-                            <i data-lucide="plus"></i> Add travel
-                        </button>
+                        <button class="node-options-btn" title="Options"><i data-lucide="more-vertical" style="width:16px; height:16px;"></i></button>
                     </div>
                 </div>
             `;
         } else if (isStop) {
             html += `
-                <div class="timeline-item">
-                    <div class="timeline-marker stop-marker">📍</div>
-                    <div class="timeline-content">
-                        <div class="timeline-item-header">
-                            <span class="timeline-item-title">${item.title}</span>
-                            <span class="timeline-item-time">${item.end_time ? 'Left at ' + item.end_time : ''}</span>
+                <div class="gmaps-feed-node">
+                    <div class="node-icon-marker stop-dot">
+                        <i data-lucide="disc" style="width:16px; height:16px;"></i>
+                    </div>
+                    <div class="node-body">
+                        <div class="node-main-info">
+                            <span class="node-title">${item.title}</span>
+                            <span class="node-subtitle">${item.subtitle || item.pickup_address || ''}</span>
+                            <span class="node-time">${item.end_time ? 'Left at ' + item.end_time : (item.start_time || '')}</span>
                         </div>
-                        <div class="timeline-item-subtitle">${item.subtitle || item.pickup_address || ''}</div>
+                        <button class="node-options-btn" title="Options"><i data-lucide="more-vertical" style="width:16px; height:16px;"></i></button>
                     </div>
                 </div>
             `;
         } else {
-            let icon = '🚗';
-            if (item.mode === 'train') icon = '🚆';
-            else if (item.mode === 'bike') icon = '🏍️';
-            else if (item.mode === 'walk') icon = '🚶';
+            let iconSvg = '<i data-lucide="car" style="width:16px; height:16px;"></i>';
+            if (item.mode === 'train') iconSvg = '<i data-lucide="train" style="width:16px; height:16px;"></i>';
+            else if (item.mode === 'bike') iconSvg = '<i data-lucide="bike" style="width:16px; height:16px;"></i>';
+            else if (item.mode === 'walk') iconSvg = '<i data-lucide="footprints" style="width:16px; height:16px;"></i>';
 
             html += `
-                <div class="timeline-item">
-                    <div class="timeline-marker">${icon}</div>
-                    <div class="timeline-content">
-                        <div class="timeline-item-header">
-                            <span class="timeline-item-title">${item.title}</span>
-                            <span class="timeline-item-time">${item.start_time || ''} - ${item.end_time || ''}</span>
+                <div class="gmaps-feed-node">
+                    <div class="node-icon-marker transit-icon">
+                        ${iconSvg}
+                    </div>
+                    <div class="node-body">
+                        <div class="node-main-info">
+                            <span class="node-title">${item.title}</span>
+                            <span class="node-subtitle">${item.subtitle || (item.pickup_address ? item.pickup_address + ' ➔ ' + item.drop_address : '')}</span>
+                            <span class="node-subtitle" style="color:#00796b; font-weight:500;">${item.distance_km || 0} km · ${item.duration_min || 0} mins</span>
+                            <span class="node-time">${item.start_time || ''} – ${item.end_time || ''}</span>
                         </div>
-                        <div class="timeline-item-subtitle">${item.subtitle || (item.pickup_address ? item.pickup_address + ' ➔ ' + item.drop_address : '')}</div>
-                        <div class="timeline-item-meta">
-                            <span>${item.distance_km || 0} km</span>
-                            <span>·</span>
-                            <span>${item.duration_min || 0} mins</span>
-                            <button onclick="deleteTimelineItem('${item.log_id}')" style="margin-left:auto; background:none; border:none; color:#e74c3c; cursor:pointer;" title="Delete">🗑️</button>
+                        <div style="display:flex; align-items:center; gap:4px;">
+                            <button class="node-options-btn" onclick="deleteTimelineItem('${item.log_id}')" title="Delete" style="color:#d93025;"><i data-lucide="trash-2" style="width:16px; height:16px;"></i></button>
+                            <button class="node-options-btn" title="Options"><i data-lucide="more-vertical" style="width:16px; height:16px;"></i></button>
                         </div>
                     </div>
                 </div>
@@ -1315,7 +1324,19 @@ function renderTimelineMap(logs) {
             const pt1 = [parseFloat(log.pickup_lat), parseFloat(log.pickup_lng)];
             latLngs.push(pt1);
 
-            const marker = L.marker(pt1, { title: log.title })
+            let markerIconHtml = '🔘';
+            if (log.mode === 'train') markerIconHtml = '🚆';
+            if (log.mode === 'car') markerIconHtml = '🚗';
+            if (log.mode === 'missing') markerIconHtml = '❓';
+
+            const customIcon = L.divIcon({
+                className: 'gmaps-place-marker ' + (log.mode || 'stop'),
+                html: `<div style="width:28px; height:28px; background:#fff; border-radius:50%; border:2px solid #5f6368; display:flex; align-items:center; justify-content:center; font-size:12px; box-shadow:0 2px 5px rgba(0,0,0,0.3);">${markerIconHtml}</div>`,
+                iconSize: [28, 28],
+                iconAnchor: [14, 14]
+            });
+
+            const marker = L.marker(pt1, { icon: customIcon, title: log.title })
                 .addTo(timelineMap)
                 .bindPopup(`<b>${log.title}</b><br>${log.subtitle || log.pickup_address || ''}`);
             timelineMapLayers.push(marker);
@@ -1324,9 +1345,9 @@ function renderTimelineMap(logs) {
                 const pt2 = [parseFloat(log.drop_lat), parseFloat(log.drop_lng)];
                 latLngs.push(pt2);
 
-                let lineStyle = { color: '#3498db', weight: 4, opacity: 0.8 };
-                if (log.mode === 'missing') lineStyle = { color: '#e74c3c', weight: 3, dashArray: '5, 8' };
-                if (log.mode === 'train') lineStyle = { color: '#9b59b6', weight: 5 };
+                let lineStyle = { color: '#1a73e8', weight: 5, opacity: 0.85 };
+                if (log.mode === 'missing') lineStyle = { color: '#d93025', weight: 4, dashArray: '6, 8' };
+                if (log.mode === 'train') lineStyle = { color: '#3f51b5', weight: 6 };
 
                 const line = L.polyline([pt1, pt2], lineStyle).addTo(timelineMap);
                 timelineMapLayers.push(line);
@@ -1336,21 +1357,94 @@ function renderTimelineMap(logs) {
 
     if (latLngs.length > 0) {
         const bounds = L.latLngBounds(latLngs);
-        timelineMap.fitBounds(bounds, { padding: [30, 30] });
+        timelineMap.fitBounds(bounds, { padding: [40, 40] });
     } else {
-        timelineMap.setView([28.62, 77.30], 10);
+        timelineMap.setView([28.50, 77.20], 10);
     }
 }
 
-function switchTimelineSubTab(tabName) {
-    const tabs = document.querySelectorAll('.timeline-tabs .t-tab');
-    tabs.forEach(t => t.classList.remove('active'));
-    if (event && event.target) {
-        event.target.classList.add('active');
+function recenterTimelineMap() {
+    if (timelineMap) {
+        timelineMap.invalidateSize();
+        if (timelineMapLayers.length > 0) {
+            const bounds = L.featureGroup(timelineMapLayers).getBounds();
+            if (bounds.isValid()) timelineMap.fitBounds(bounds, { padding: [30, 30] });
+        }
     }
+}
 
-    const feedTitle = document.getElementById('timeline-feed-title');
-    if (feedTitle) feedTitle.innerText = `${tabName.charAt(0).toUpperCase() + tabName.slice(1)} Activity Log`;
+function toggleMapLayers() {
+    alert("Map tile style: Standard Google Maps Roadmap");
+}
+
+function switchTimelineSubTab(tabName) {
+    const tabs = document.querySelectorAll('.gmaps-tab');
+    tabs.forEach(t => t.classList.remove('active'));
+    if (event && event.currentTarget) {
+        event.currentTarget.classList.add('active');
+    }
+}
+
+function toggleMobilePhonePreview() {
+    const modal = document.getElementById('mobile-phone-modal');
+    if (!modal) return;
+    modal.classList.toggle('hidden');
+
+    if (!modal.classList.contains('hidden')) {
+        setTimeout(() => {
+            if (!mobileTimelineMap && typeof L !== 'undefined') {
+                mobileTimelineMap = L.map('mobile-timeline-map', { zoomControl: false }).setView([28.50, 77.20], 10);
+                L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
+                    maxZoom: 20,
+                    subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
+                }).addTo(mobileTimelineMap);
+            }
+            if (mobileTimelineMap) {
+                mobileTimelineMap.invalidateSize();
+                if (currentTimelineLogs) renderMobileTimelineMap(currentTimelineLogs);
+            }
+        }, 200);
+    }
+}
+
+function renderMobileTimelineMap(logs) {
+    if (!mobileTimelineMap) return;
+    mobileTimelineMapLayers.forEach(l => mobileTimelineMap.removeLayer(l));
+    mobileTimelineMapLayers = [];
+
+    const latLngs = [];
+    logs.forEach(log => {
+        if (log.pickup_lat && log.pickup_lng) {
+            const pt1 = [parseFloat(log.pickup_lat), parseFloat(log.pickup_lng)];
+            latLngs.push(pt1);
+
+            let markerIconHtml = '🔘';
+            if (log.mode === 'train') markerIconHtml = '🚆';
+            if (log.mode === 'car') markerIconHtml = '🚗';
+            if (log.mode === 'missing') markerIconHtml = '❓';
+
+            const customIcon = L.divIcon({
+                className: 'gmaps-place-marker',
+                html: `<div style="width:24px; height:24px; background:#fff; border-radius:50%; border:2px solid #5f6368; display:flex; align-items:center; justify-content:center; font-size:11px;">${markerIconHtml}</div>`,
+                iconSize: [24, 24],
+                iconAnchor: [12, 12]
+            });
+
+            const marker = L.marker(pt1, { icon: customIcon }).addTo(mobileTimelineMap);
+            mobileTimelineMapLayers.push(marker);
+
+            if (log.drop_lat && log.drop_lng) {
+                const pt2 = [parseFloat(log.drop_lat), parseFloat(log.drop_lng)];
+                latLngs.push(pt2);
+                const line = L.polyline([pt1, pt2], { color: '#1a73e8', weight: 4 }).addTo(mobileTimelineMap);
+                mobileTimelineMapLayers.push(line);
+            }
+        }
+    });
+
+    if (latLngs.length > 0) {
+        mobileTimelineMap.fitBounds(L.latLngBounds(latLngs), { padding: [20, 20] });
+    }
 }
 
 function openAddTravelModal(logId = null) {
@@ -1430,3 +1524,4 @@ function deleteTimelineItem(logId) {
             }
         });
 }
+
