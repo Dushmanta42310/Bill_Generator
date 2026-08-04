@@ -41,7 +41,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 7. Initialize Daily Travel Timeline Module
     initTimelineModule();
+
+    // 8. Mobile Sidebar Nav Auto Close on Link Click
+    document.querySelectorAll('.sidebar-nav .nav-item').forEach(item => {
+        item.addEventListener('click', () => {
+            const sidebar = document.querySelector('.sidebar');
+            if (sidebar && sidebar.classList.contains('open')) {
+                sidebar.classList.remove('open');
+            }
+        });
+    });
 });
+
+// Toggle Mobile Responsive Sidebar Drawer
+function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    if (sidebar) {
+        sidebar.classList.toggle('open');
+    }
+}
 
 // Set default datetime value in format local datetime inputs expect: YYYY-MM-DDThh:mm
 function setDefaultDateTime() {

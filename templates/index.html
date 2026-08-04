@@ -60,18 +60,23 @@
         <main class="main-content">
             <!-- Header -->
             <header class="top-bar">
-                <div class="welcome">
-                    <h1>Ride Invoice Studio</h1>
-                    <p>Generate, edit, and print official Rapido ride summaries & tax receipts.</p>
+                <div class="top-bar-left">
+                    <button class="mobile-menu-btn" onclick="toggleSidebar()" title="Toggle Navigation">
+                        <i data-lucide="menu"></i>
+                    </button>
+                    <div class="welcome">
+                        <h1>Ride Invoice Studio</h1>
+                        <p>Generate, edit, and print official Rapido ride summaries & tax receipts.</p>
+                    </div>
                 </div>
                 <div class="quick-actions">
                     <button class="btn btn-secondary" onclick="resetForm()">
                         <i data-lucide="rotate-ccw"></i>
-                        <span>Reset Form</span>
+                        <span>Reset</span>
                     </button>
                     <button class="btn btn-primary" onclick="submitRide()">
                         <i data-lucide="save"></i>
-                        <span>Save Ride to DB</span>
+                        <span>Save Ride</span>
                     </button>
                 </div>
             </header>
