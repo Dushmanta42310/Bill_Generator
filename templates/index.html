@@ -107,100 +107,8 @@
                 </a>
             </nav>
 
-            <!-- Google Maps Style Daily Travel Timeline Tracker (Integrated Dashboard Top View) -->
-            <section class="timeline-panel card" id="timeline-section">
-                <!-- Header -->
-                <div class="gmaps-timeline-header">
-                    <div class="gmaps-header-left">
-                        <h2>Timeline</h2>
-                        <span class="live-clock-badge" id="live-clock-badge"></span>
-                    </div>
-                    <div class="gmaps-header-right">
-                        <button class="gmaps-icon-btn" title="Cloud Sync"><i data-lucide="cloud"></i></button>
-                        <button class="gmaps-icon-btn" title="Options"><i data-lucide="more-vertical"></i></button>
-                        <button class="gmaps-icon-btn" title="Close"><i data-lucide="x"></i></button>
-                    </div>
-                </div>
-
-                <!-- Google Maps Timeline Tabs -->
-                <div class="gmaps-timeline-tabs">
-                    <button class="gmaps-tab active" onclick="switchTimelineSubTab('day')">
-                        <div class="tab-label-wrap">
-                            <i data-lucide="calendar" style="width:16px; height:16px;"></i>
-                            <span>Day</span>
-                        </div>
-                        <div class="tab-indicator"></div>
-                    </button>
-                    <button class="gmaps-tab" onclick="switchTimelineSubTab('trips')">
-                        <span>Trips</span>
-                        <div class="tab-indicator"></div>
-                    </button>
-                    <button class="gmaps-tab" onclick="switchTimelineSubTab('insights')">
-                        <span>Insights</span>
-                        <div class="tab-indicator"></div>
-                    </button>
-                    <button class="gmaps-tab" onclick="switchTimelineSubTab('places')">
-                        <span>Places</span>
-                        <div class="tab-indicator"></div>
-                    </button>
-                </div>
-
-                <!-- Timeline Body Container -->
-                <div class="gmaps-timeline-body">
-                    <!-- Leaflet Google Map Container -->
-                    <div class="gmaps-map-wrapper">
-                        <div id="timeline-map-container"></div>
-                        <!-- Floating Map Controls -->
-                        <div class="floating-map-controls">
-                            <button class="floating-btn" onclick="recenterTimelineMap()" title="Target Location">
-                                <i data-lucide="crosshair"></i>
-                            </button>
-                            <button class="floating-btn" onclick="toggleMapLayers()" title="Map Layers">
-                                <i data-lucide="layers"></i>
-                            </button>
-                        </div>
-                    </div>
-
-                    <!-- Details Sheet Panel -->
-                    <div class="gmaps-sheet-panel">
-                        <div class="drag-handle-bar">
-                            <div class="drag-pill"></div>
-                        </div>
-
-                        <!-- Date Picker Control Bar -->
-                        <div class="gmaps-date-selector">
-                            <button class="date-arrow-btn" onclick="changeTimelineDate(-1)" title="Previous Day">
-                                <i data-lucide="chevron-left"></i>
-                            </button>
-                            <div class="date-dropdown-wrap">
-                                <span id="timeline-date-formatted">Wed, 1 Jul 2026</span>
-                                <i data-lucide="chevron-down" class="dropdown-arrow"></i>
-                                <input type="date" id="timeline-date-input" value="2026-07-01" onchange="onTimelineDateSelected(this.value)">
-                            </div>
-                            <button class="date-arrow-btn" onclick="changeTimelineDate(1)" title="Next Day">
-                                <i data-lucide="chevron-right"></i>
-                            </button>
-                        </div>
-
-                        <!-- Horizontal Mode Stats Summary Row -->
-                        <div class="gmaps-mode-summary" id="mode-summary-container">
-                            <!-- Injected dynamically by JS -->
-                        </div>
-
-                        <!-- Vertical Timeline List Feed -->
-                        <div class="gmaps-timeline-feed-wrap">
-                            <div class="gmaps-feed-list" id="timeline-feed">
-                                <!-- Injected dynamically by JS -->
-                            </div>
-                        </div>
-
-                        <!-- Floating Edit Pencil FAB -->
-                        <button class="gmaps-fab-edit" onclick="openAddTravelModal()" title="Add / Edit Leg">
-                            <i data-lucide="pencil"></i>
-                        </button>
-                    </div>
-                </div>
-            </section>
+            <!-- Dashboard Main Grid (Ride Details Form + Printable Invoices) -->
+            <div class="dashboard-grid" id="dashboard">
                 <!-- Left Pane: Configuration & Map -->
                 <section class="config-panel card">
                     <div class="card-header">
@@ -723,6 +631,101 @@
                     </div>
                 </section>
             </div>
+
+            <!-- Google Maps Style Daily Travel Timeline Tracker -->
+            <section class="timeline-panel card" id="timeline-section">
+                <!-- Header -->
+                <div class="gmaps-timeline-header">
+                    <div class="gmaps-header-left">
+                        <h2>Timeline</h2>
+                        <span class="live-clock-badge" id="live-clock-badge"></span>
+                    </div>
+                    <div class="gmaps-header-right">
+                        <button class="gmaps-icon-btn" title="Cloud Sync"><i data-lucide="cloud"></i></button>
+                        <button class="gmaps-icon-btn" title="Options"><i data-lucide="more-vertical"></i></button>
+                        <button class="gmaps-icon-btn" title="Close"><i data-lucide="x"></i></button>
+                    </div>
+                </div>
+
+                <!-- Google Maps Timeline Tabs -->
+                <div class="gmaps-timeline-tabs">
+                    <button class="gmaps-tab active" onclick="switchTimelineSubTab('day')">
+                        <div class="tab-label-wrap">
+                            <i data-lucide="calendar" style="width:16px; height:16px;"></i>
+                            <span>Day</span>
+                        </div>
+                        <div class="tab-indicator"></div>
+                    </button>
+                    <button class="gmaps-tab" onclick="switchTimelineSubTab('trips')">
+                        <span>Trips</span>
+                        <div class="tab-indicator"></div>
+                    </button>
+                    <button class="gmaps-tab" onclick="switchTimelineSubTab('insights')">
+                        <span>Insights</span>
+                        <div class="tab-indicator"></div>
+                    </button>
+                    <button class="gmaps-tab" onclick="switchTimelineSubTab('places')">
+                        <span>Places</span>
+                        <div class="tab-indicator"></div>
+                    </button>
+                </div>
+
+                <!-- Timeline Body Container -->
+                <div class="gmaps-timeline-body">
+                    <!-- Leaflet Google Map Container -->
+                    <div class="gmaps-map-wrapper">
+                        <div id="timeline-map-container"></div>
+                        <!-- Floating Map Controls -->
+                        <div class="floating-map-controls">
+                            <button class="floating-btn" onclick="recenterTimelineMap()" title="Target Location">
+                                <i data-lucide="crosshair"></i>
+                            </button>
+                            <button class="floating-btn" onclick="toggleMapLayers()" title="Map Layers">
+                                <i data-lucide="layers"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Details Sheet Panel -->
+                    <div class="gmaps-sheet-panel">
+                        <div class="drag-handle-bar">
+                            <div class="drag-pill"></div>
+                        </div>
+
+                        <!-- Date Picker Control Bar -->
+                        <div class="gmaps-date-selector">
+                            <button class="date-arrow-btn" onclick="changeTimelineDate(-1)" title="Previous Day">
+                                <i data-lucide="chevron-left"></i>
+                            </button>
+                            <div class="date-dropdown-wrap">
+                                <span id="timeline-date-formatted">Wed, 1 Jul 2026</span>
+                                <i data-lucide="chevron-down" class="dropdown-arrow"></i>
+                                <input type="date" id="timeline-date-input" value="2026-07-01" onchange="onTimelineDateSelected(this.value)">
+                            </div>
+                            <button class="date-arrow-btn" onclick="changeTimelineDate(1)" title="Next Day">
+                                <i data-lucide="chevron-right"></i>
+                            </button>
+                        </div>
+
+                        <!-- Horizontal Mode Stats Summary Row -->
+                        <div class="gmaps-mode-summary" id="mode-summary-container">
+                            <!-- Injected dynamically by JS -->
+                        </div>
+
+                        <!-- Vertical Timeline List Feed -->
+                        <div class="gmaps-timeline-feed-wrap">
+                            <div class="gmaps-feed-list" id="timeline-feed">
+                                <!-- Injected dynamically by JS -->
+                            </div>
+                        </div>
+
+                        <!-- Floating Edit Pencil FAB -->
+                        <button class="gmaps-fab-edit" onclick="openAddTravelModal()" title="Add / Edit Leg">
+                            <i data-lucide="pencil"></i>
+                        </button>
+                    </div>
+                </div>
+            </section>
 
             <!-- Bottom Section: Saved Invoices Database Logs -->
             <section class="history-panel card" id="history-section">

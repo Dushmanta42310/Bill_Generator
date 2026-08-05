@@ -1110,10 +1110,8 @@ let mobileTimelineMap = null;
 let timelineMapLayers = [];
 let mobileTimelineMapLayers = [];
 
-// Initialize currentTimelineDate to dynamic local system date (YYYY-MM-DD)
-const _todayObj = new Date();
-const _tzOffset = _todayObj.getTimezoneOffset() * 60000;
-let currentTimelineDate = (new Date(_todayObj - _tzOffset)).toISOString().split('T')[0];
+// Initialize currentTimelineDate to default sample date (2026-07-01) matching Google Maps screenshot
+let currentTimelineDate = '2026-07-01';
 let currentTimelineLogs = [];
 
 function initTimelineModule() {
@@ -1399,6 +1397,10 @@ function renderTimelineMap(logs) {
     } else {
         timelineMap.setView([28.50, 77.20], 10);
     }
+
+    setTimeout(() => {
+        if (timelineMap) timelineMap.invalidateSize();
+    }, 200);
 }
 
 function recenterTimelineMap() {
