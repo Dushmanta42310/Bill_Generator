@@ -42,14 +42,38 @@ document.addEventListener('DOMContentLoaded', () => {
     // 7. Initialize Daily Travel Timeline Module
     initTimelineModule();
 
-    // 8. Mobile Sidebar Nav Auto Close on Link Click
-    document.querySelectorAll('.sidebar-nav .nav-item').forEach(item => {
+    // 8. Mobile Sidebar & Quick Nav Auto Close & Map Invalidate on Link Click
+    document.querySelectorAll('.sidebar-nav .nav-item, .mobile-nav-bar .m-nav-item').forEach(item => {
         item.addEventListener('click', () => {
+            if (item.classList.contains('m-nav-item')) {
+                document.querySelectorAll('.mobile-nav-bar .m-nav-item').forEach(link => link.classList.remove('active'));
+                item.classList.add('active');
+            }
             const sidebar = document.querySelector('.sidebar');
+            const backdrop = document.getElementById('sidebar-backdrop');
             if (sidebar && sidebar.classList.contains('open')) {
                 sidebar.classList.remove('open');
             }
+            if (backdrop && backdrop.classList.contains('active')) {
+                backdrop.classList.remove('active');
+            }
+            setTimeout(() => {
+                if (mainMap) mainMap.invalidateSize();
+                if (previewMap) previewMap.invalidateSize();
+                if (typeof timelineMap !== 'undefined' && timelineMap) timelineMap.invalidateSize();
+            }, 300);
         });
+    });
+
+    // 9. Window Resize Listener for Responsive Map Redraws
+    let resizeTimer;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(() => {
+            if (mainMap) mainMap.invalidateSize();
+            if (previewMap) previewMap.invalidateSize();
+            if (typeof timelineMap !== 'undefined' && timelineMap) timelineMap.invalidateSize();
+        }, 200);
     });
 });
 
