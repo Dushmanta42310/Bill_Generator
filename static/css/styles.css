@@ -1953,7 +1953,28 @@ input:checked + .slider:before {
 .gmaps-timeline-feed-wrap {
     flex: 1;
     overflow-y: auto;
+    max-height: 420px;
     padding: 16px 20px 80px 20px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent, #f39c12) #f1f3f4;
+}
+
+.gmaps-timeline-feed-wrap::-webkit-scrollbar {
+    width: 8px;
+}
+
+.gmaps-timeline-feed-wrap::-webkit-scrollbar-track {
+    background: #f1f3f4;
+    border-radius: 4px;
+}
+
+.gmaps-timeline-feed-wrap::-webkit-scrollbar-thumb {
+    background: var(--accent, #f39c12);
+    border-radius: 4px;
+}
+
+.gmaps-timeline-feed-wrap::-webkit-scrollbar-thumb:hover {
+    background: #e67e22;
 }
 
 .gmaps-feed-list {
@@ -2597,6 +2618,28 @@ input:checked + .slider:before {
     gap: 12px;
     overflow-y: auto;
     max-height: 420px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent, #f39c12) #f1f3f4;
+}
+
+.trips-tab-container::-webkit-scrollbar,
+.insights-tab-container::-webkit-scrollbar,
+.places-tab-container::-webkit-scrollbar {
+    width: 8px;
+}
+
+.trips-tab-container::-webkit-scrollbar-track,
+.insights-tab-container::-webkit-scrollbar-track,
+.places-tab-container::-webkit-scrollbar-track {
+    background: #f1f3f4;
+    border-radius: 4px;
+}
+
+.trips-tab-container::-webkit-scrollbar-thumb,
+.insights-tab-container::-webkit-scrollbar-thumb,
+.places-tab-container::-webkit-scrollbar-thumb {
+    background: var(--accent, #f39c12);
+    border-radius: 4px;
 }
 
 .insight-card {
