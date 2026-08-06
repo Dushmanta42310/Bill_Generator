@@ -191,6 +191,82 @@ def save_timeline():
             'error': str(e)
         }), 500
 
+@app.route('/api/timeline/insights', methods=['GET'])
+def get_timeline_insights():
+    """API endpoint to get summary insights & mode breakdowns for a date."""
+    try:
+        travel_date = request.args.get('date', '2026-07-01')
+        insights = db.get_timeline_insights(travel_date)
+        return jsonify({
+            'success': True,
+            'insights': insights
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/timeline/places', methods=['GET'])
+def get_timeline_places():
+    """API endpoint to retrieve saved places repository across all dates."""
+    try:
+        places = db.get_all_timeline_places()
+        return jsonify({
+            'success': True,
+            'count': len(places),
+            'places': places
+        }), 200
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/timeline/gps', methods=['POST'])
+def save_gps_timeline():
+    """API endpoint to save live GPS location entry to daily routine timeline."""
+    try:
+        data = request.get_json()
+        if not data or not data.get('lat') or not data.get('lng'):
+            return jsonify({
+                'success': False,
+                'error': 'Missing lat or lng coordinates'
+            }), 400
+
+        import datetime
+        now = datetime.datetime.now()
+        travel_date = data.get('travel_date') or now.strftime('%Y-%m-%d')
+        start_time = now.strftime('%I:%M %p')
+
+        payload = {
+            'log_id': f"GPS_{int(now.timestamp() * 1000)}",
+            'travel_date': travel_date,
+            'start_time': start_time,
+            'end_time': start_time,
+            'log_type': 'stop',
+            'title': data.get('title') or 'Current Location (GPS)',
+            'subtitle': data.get('address') or f"Lat: {data['lat']}, Lng: {data['lng']}",
+            'mode': 'other',
+            'distance_km': 0.0,
+            'duration_min': 0.0,
+            'pickup_address': data.get('address') or f"Lat: {data['lat']}, Lng: {data['lng']}",
+            'pickup_lat': float(data['lat']),
+            'pickup_lng': float(data['lng'])
+        }
+
+        log_id = db.save_travel_log(payload)
+        return jsonify({
+            'success': True,
+            'message': 'GPS location saved to timeline routine',
+            'log': payload
+        }), 201
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
 @app.route('/api/timeline/<log_id>', methods=['DELETE'])
 def delete_timeline(log_id):
     """API endpoint to delete a timeline record."""
@@ -215,3 +291,5 @@ def delete_timeline(log_id):
 if __name__ == '__main__':
     print(f"Starting server on http://{config.HOST}:{config.PORT}")
     app.run(host=config.HOST, port=config.PORT, debug=config.DEBUG)
+
+

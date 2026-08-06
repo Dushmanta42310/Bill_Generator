@@ -576,6 +576,69 @@ def delete_travel_log(log_id):
         cursor.close()
         conn.close()
 
+def get_timeline_insights(travel_date):
+    """
+    Computes routine travel insights & stats for a given date.
+    """
+    logs = get_timeline_by_date(travel_date)
+    total_dist = 0.0
+    total_dur = 0.0
+    mode_stats = {}
+    stops_count = 0
+    travel_legs_count = 0
+
+    for log in logs:
+        dist = float(log.get('distance_km') or 0.0)
+        dur = float(log.get('duration_min') or 0.0)
+        total_dist += dist
+        total_dur += dur
+        
+        if log.get('log_type') == 'stop':
+            stops_count += 1
+        else:
+            travel_legs_count += 1
+            mode = log.get('mode') or 'car'
+            if mode not in mode_stats:
+                mode_stats[mode] = {'dist': 0.0, 'dur': 0.0, 'count': 0}
+            mode_stats[mode]['dist'] += dist
+            mode_stats[mode]['dur'] += dur
+            mode_stats[mode]['count'] += 1
+
+    return {
+        'date': travel_date,
+        'total_distance_km': round(total_dist, 2),
+        'total_duration_min': round(total_dur, 2),
+        'stops_count': stops_count,
+        'travel_legs_count': travel_legs_count,
+        'mode_breakdown': mode_stats
+    }
+
+def get_all_timeline_places():
+    """
+    Retrieves unique stop places saved across all timeline entries.
+    """
+    conn, db_type = get_db_connection()
+    if db_type == 'supabase':
+        try:
+            res = conn.table('travel_logs').select('title, subtitle, pickup_address, pickup_lat, pickup_lng, travel_date').eq('log_type', 'stop').execute()
+            return res.data
+        except Exception:
+            conn = sqlite3.connect(config.SQLITE_DB_PATH)
+            db_type = 'sqlite'
+
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT TITLE, SUBTITLE, PICKUP_ADDRESS, PICKUP_LAT, PICKUP_LNG, TRAVEL_DATE FROM TRAVEL_LOGS WHERE LOG_TYPE = 'stop' ORDER BY TRAVEL_DATE DESC")
+        columns = get_columns(cursor, db_type)
+        rows = cursor.fetchall()
+        return [parse_row(row, columns, db_type) for row in rows]
+    except Exception as e:
+        print(f"Error fetching timeline places: {e}")
+        return []
+    finally:
+        cursor.close()
+        conn.close()
+
 def seed_sample_timeline():
     """
     Seeds initial sample daily timeline records matching today's date and 2026-07-01 if no logs exist.

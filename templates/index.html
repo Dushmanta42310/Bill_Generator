@@ -76,6 +76,10 @@
                     </div>
                 </div>
                 <div class="quick-actions">
+                    <button class="btn btn-phone-sim" onclick="togglePhoneSimulator()" title="Test Phone View Simulator">
+                        <i data-lucide="smartphone"></i>
+                        <span>Phone View</span>
+                    </button>
                     <button class="btn btn-secondary" onclick="resetForm()">
                         <i data-lucide="rotate-ccw"></i>
                         <span>Reset</span>
@@ -673,10 +677,13 @@
                 <!-- Timeline Body Container -->
                 <div class="gmaps-timeline-body">
                     <!-- Leaflet Google Map Container -->
-                    <div class="gmaps-map-wrapper">
+                    <div class="gmaps-map-wrapper" id="timeline-map-wrapper">
                         <div id="timeline-map-container"></div>
                         <!-- Floating Map Controls -->
                         <div class="floating-map-controls">
+                            <button class="floating-btn" onclick="trackGPSLocation()" title="Log Current GPS Location">
+                                <i data-lucide="navigation-2"></i>
+                            </button>
                             <button class="floating-btn" onclick="recenterTimelineMap()" title="Target Location">
                                 <i data-lucide="crosshair"></i>
                             </button>
@@ -684,10 +691,15 @@
                                 <i data-lucide="layers"></i>
                             </button>
                         </div>
+                        <!-- Phone View Switcher floating button -->
+                        <button class="mobile-map-toggle-btn" id="mobile-view-toggle-btn" onclick="toggleMobileViewMode()">
+                            <i data-lucide="list"></i>
+                            <span id="mobile-toggle-btn-text">View Feed</span>
+                        </button>
                     </div>
 
                     <!-- Details Sheet Panel -->
-                    <div class="gmaps-sheet-panel">
+                    <div class="gmaps-sheet-panel" id="timeline-sheet-panel">
                         <div class="drag-handle-bar">
                             <div class="drag-pill"></div>
                         </div>
@@ -707,14 +719,38 @@
                             </button>
                         </div>
 
-                        <!-- Horizontal Mode Stats Summary Row -->
-                        <div class="gmaps-mode-summary" id="mode-summary-container">
-                            <!-- Injected dynamically by JS -->
+                        <!-- SUB-TAB 1: DAY TIMELINE FEED VIEW -->
+                        <div class="subtab-panel active" id="subtab-day-panel">
+                            <!-- Horizontal Mode Stats Summary Row -->
+                            <div class="gmaps-mode-summary" id="mode-summary-container">
+                                <!-- Injected dynamically by JS -->
+                            </div>
+
+                            <!-- Vertical Timeline List Feed -->
+                            <div class="gmaps-timeline-feed-wrap">
+                                <div class="gmaps-feed-list" id="timeline-feed">
+                                    <!-- Injected dynamically by JS -->
+                                </div>
+                            </div>
                         </div>
 
-                        <!-- Vertical Timeline List Feed -->
-                        <div class="gmaps-timeline-feed-wrap">
-                            <div class="gmaps-feed-list" id="timeline-feed">
+                        <!-- SUB-TAB 2: TRIPS VIEW -->
+                        <div class="subtab-panel" id="subtab-trips-panel">
+                            <div class="trips-tab-container" id="trips-container">
+                                <!-- Injected dynamically by JS -->
+                            </div>
+                        </div>
+
+                        <!-- SUB-TAB 3: INSIGHTS VIEW -->
+                        <div class="subtab-panel" id="subtab-insights-panel">
+                            <div class="insights-tab-container" id="insights-container">
+                                <!-- Injected dynamically by JS -->
+                            </div>
+                        </div>
+
+                        <!-- SUB-TAB 4: PLACES VIEW -->
+                        <div class="subtab-panel" id="subtab-places-panel">
+                            <div class="places-tab-container" id="places-container">
                                 <!-- Injected dynamically by JS -->
                             </div>
                         </div>
@@ -844,6 +880,27 @@
                     <button type="submit" class="btn btn-primary">Save Leg to Timeline</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- Phone View Simulator Modal -->
+    <div id="phone-simulator-modal" class="modal-overlay hidden">
+        <div class="phone-frame-card">
+            <div class="phone-frame-header">
+                <div class="phone-notch"></div>
+                <span class="phone-frame-title">📱 Phone Display View Simulator</span>
+                <button type="button" class="btn-icon" onclick="togglePhoneSimulator()" title="Close Simulator">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <div class="phone-frame-body">
+                <iframe id="phone-simulator-iframe" src="/" title="Mobile View Preview"></iframe>
+            </div>
+            <div class="phone-frame-footer">
+                <button class="btn btn-secondary btn-sm" onclick="setPhoneSimWidth(375)">iPhone SE (375px)</button>
+                <button class="btn btn-secondary btn-sm" onclick="setPhoneSimWidth(390)">iPhone 14 (390px)</button>
+                <button class="btn btn-secondary btn-sm" onclick="setPhoneSimWidth(412)">Pixel 7 (412px)</button>
+            </div>
         </div>
     </div>
 

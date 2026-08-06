@@ -1441,73 +1441,248 @@ function toggleMapLayers() {
     alert("Map tile style: Standard Google Maps Roadmap");
 }
 
+let currentSubTab = 'day';
+
 function switchTimelineSubTab(tabName) {
+    currentSubTab = tabName;
     const tabs = document.querySelectorAll('.gmaps-tab');
     tabs.forEach(t => t.classList.remove('active'));
     if (event && event.currentTarget) {
         event.currentTarget.classList.add('active');
     }
+
+    document.querySelectorAll('.subtab-panel').forEach(p => p.classList.remove('active'));
+    const activePanel = document.getElementById(`subtab-${tabName}-panel`);
+    if (activePanel) activePanel.classList.add('active');
+
+    if (tabName === 'trips') renderTripsView();
+    if (tabName === 'insights') renderInsightsView();
+    if (tabName === 'places') renderPlacesView();
 }
 
-function toggleMobilePhonePreview() {
-    const modal = document.getElementById('mobile-phone-modal');
+function renderTripsView() {
+    const container = document.getElementById('trips-container');
+    if (!container) return;
+
+    let totalDist = 0;
+    let totalDur = 0;
+    currentTimelineLogs.forEach(l => {
+        totalDist += parseFloat(l.distance_km || 0);
+        totalDur += parseFloat(l.duration_min || 0);
+    });
+
+    const h = Math.floor(totalDur / 60);
+    const m = Math.round(totalDur % 60);
+    const durStr = h > 0 ? `${h} hr ${m} min` : `${m} min`;
+
+    container.innerHTML = `
+        <div class="insight-card">
+            <div class="insight-card-header">
+                <span class="insight-title">Daily Trip Routine Summary</span>
+                <i data-lucide="navigation" style="color:var(--accent); width:20px; height:20px;"></i>
+            </div>
+            <div class="insight-val">${totalDist.toFixed(1)} km</div>
+            <div style="font-size:13px; color:var(--text-secondary);">${currentTimelineLogs.length} total legs/stops · ${durStr} travel time</div>
+        </div>
+        <div style="font-weight:600; font-size:13px; color:var(--text-secondary); margin-top:8px;">Trip Segments Logged:</div>
+        ${currentTimelineLogs.map((item, idx) => `
+            <div class="insight-card" style="padding:10px 14px;">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <span style="font-weight:600; color:var(--text-primary); font-size:13px;">Leg ${idx + 1}: ${item.title}</span>
+                    <span style="font-size:12px; color:var(--accent); font-weight:600;">${item.distance_km || 0} km</span>
+                </div>
+                <div style="font-size:12px; color:var(--text-secondary);">${item.pickup_address || ''} ${item.drop_address ? '➔ ' + item.drop_address : ''}</div>
+            </div>
+        `).join('')}
+    `;
+    if (typeof lucide !== 'undefined') lucide.createIcons();
+}
+
+function renderInsightsView() {
+    const container = document.getElementById('insights-container');
+    if (!container) return;
+
+    fetch(`/api/timeline/insights?date=${currentTimelineDate}`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.insights) {
+                const ins = data.insights;
+                const modes = ins.mode_breakdown || {};
+                let modeHtml = '';
+                for (let m in modes) {
+                    modeHtml += `
+                        <div style="display:flex; justify-content:space-between; font-size:12px; padding:4px 0; border-bottom:1px solid var(--border-color);">
+                            <span style="text-transform:capitalize; font-weight:500;">${m === 'train' ? '🚆 Train/Metro' : (m === 'car' ? '🚗 Car/Taxi' : m)}</span>
+                            <span style="font-weight:600; color:var(--text-primary);">${modes[m].dist.toFixed(1)} km (${modes[m].dur} min)</span>
+                        </div>
+                    `;
+                }
+
+                container.innerHTML = `
+                    <div class="insight-card">
+                        <div class="insight-card-header">
+                            <span class="insight-title">Total Daily Distance</span>
+                            <i data-lucide="activity" style="color:var(--accent); width:20px; height:20px;"></i>
+                        </div>
+                        <div class="insight-val">${ins.total_distance_km} km</div>
+                    </div>
+                    <div class="insight-card">
+                        <div class="insight-card-header">
+                            <span class="insight-title">Routine Places Visited</span>
+                            <i data-lucide="map-pin" style="color:#10b981; width:20px; height:20px;"></i>
+                        </div>
+                        <div class="insight-val" style="color:#10b981;">${ins.stops_count} Places</div>
+                    </div>
+                    <div class="insight-card">
+                        <span class="insight-title">Travel Mode Distribution</span>
+                        <div style="margin-top:6px;">${modeHtml || '<div style="font-size:12px; color:var(--text-secondary);">No transport legs recorded for this date.</div>'}</div>
+                    </div>
+                `;
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }
+        });
+}
+
+function renderPlacesView() {
+    const container = document.getElementById('places-container');
+    if (!container) return;
+
+    fetch('/api/timeline/places')
+        .then(res => res.json())
+        .then(data => {
+            if (data.success && data.places) {
+                const places = data.places;
+                if (places.length === 0) {
+                    container.innerHTML = `<div style="text-align:center; color:var(--text-secondary); padding:20px;">No saved routine places found.</div>`;
+                    return;
+                }
+                container.innerHTML = places.map(p => `
+                    <div class="place-item-card">
+                        <div class="place-info-left">
+                            <div class="place-icon"><i data-lucide="map-pin" style="width:18px; height:18px;"></i></div>
+                            <div>
+                                <div class="place-name">${p.title}</div>
+                                <div class="place-sub">${p.subtitle || p.pickup_address || ''}</div>
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary btn-sm" onclick="focusPlaceOnTimeline('${p.pickup_lat}', '${p.pickup_lng}', '${p.title}')">
+                            <i data-lucide="crosshair" style="width:14px; height:14px;"></i> Map
+                        </button>
+                    </div>
+                `).join('');
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }
+        });
+}
+
+function focusPlaceOnTimeline(lat, lng, title) {
+    if (timelineMap && lat && lng) {
+        const pt = [parseFloat(lat), parseFloat(lng)];
+        timelineMap.setView(pt, 15);
+        L.popup().setLatLng(pt).setContent(`<b>${title}</b>`).openOn(timelineMap);
+    }
+}
+
+// Live GPS Location Tracking
+function trackGPSLocation() {
+    if (!navigator.geolocation) {
+        alert("Geolocation is not supported by your browser.");
+        return;
+    }
+
+    alert("Requesting current GPS coordinates...");
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+
+            fetch('/api/timeline/gps', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    lat: lat,
+                    lng: lng,
+                    travel_date: currentTimelineDate,
+                    title: 'Logged Location (GPS)',
+                    address: `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert("GPS location successfully logged to daily routine map!");
+                    loadTimelineData(currentTimelineDate);
+                } else {
+                    alert("Error saving GPS location: " + data.error);
+                }
+            });
+        },
+        (error) => {
+            console.warn("GPS error: ", error.message);
+            // Fallback sample coordinates if user denies browser location permission
+            const mockLat = 28.6644 + (Math.random() - 0.5) * 0.02;
+            const mockLng = 77.3601 + (Math.random() - 0.5) * 0.02;
+            fetch('/api/timeline/gps', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    lat: mockLat,
+                    lng: mockLng,
+                    travel_date: currentTimelineDate,
+                    title: 'Current Routine Stop (Simulated GPS)',
+                    address: 'Sector 3, Vasundhara, Ghaziabad'
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert("GPS stop logged to daily routine timeline map!");
+                    loadTimelineData(currentTimelineDate);
+                }
+            });
+        },
+        { enableHighAccuracy: true, timeout: 5000 }
+    );
+}
+
+// Mobile View Switcher Mode (Map vs Timeline Feed)
+let isMobileMapShowing = false;
+function toggleMobileViewMode() {
+    const body = document.querySelector('.gmaps-timeline-body');
+    const text = document.getElementById('mobile-toggle-btn-text');
+    if (!body) return;
+
+    isMobileMapShowing = !isMobileMapShowing;
+    if (isMobileMapShowing) {
+        body.classList.add('show-map-only');
+        body.classList.remove('show-feed-only');
+        if (text) text.innerText = 'View Feed';
+        setTimeout(() => { if (timelineMap) timelineMap.invalidateSize(); }, 200);
+    } else {
+        body.classList.add('show-feed-only');
+        body.classList.remove('show-map-only');
+        if (text) text.innerText = 'View Map';
+    }
+}
+
+// Phone View Simulator Modal Logic
+function togglePhoneSimulator() {
+    const modal = document.getElementById('phone-simulator-modal');
     if (!modal) return;
     modal.classList.toggle('hidden');
 
     if (!modal.classList.contains('hidden')) {
-        setTimeout(() => {
-            if (!mobileTimelineMap && typeof L !== 'undefined') {
-                mobileTimelineMap = L.map('mobile-timeline-map', { zoomControl: false }).setView([28.50, 77.20], 10);
-                L.tileLayer('https://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-                    maxZoom: 20,
-                    subdomains: ['mt0', 'mt1', 'mt2', 'mt3']
-                }).addTo(mobileTimelineMap);
-            }
-            if (mobileTimelineMap) {
-                mobileTimelineMap.invalidateSize();
-                if (currentTimelineLogs) renderMobileTimelineMap(currentTimelineLogs);
-            }
-        }, 200);
+        const iframe = document.getElementById('phone-simulator-iframe');
+        if (iframe && iframe.src !== window.location.href) {
+            iframe.src = window.location.href;
+        }
     }
 }
 
-function renderMobileTimelineMap(logs) {
-    if (!mobileTimelineMap) return;
-    mobileTimelineMapLayers.forEach(l => mobileTimelineMap.removeLayer(l));
-    mobileTimelineMapLayers = [];
-
-    const latLngs = [];
-    logs.forEach(log => {
-        if (log.pickup_lat && log.pickup_lng) {
-            const pt1 = [parseFloat(log.pickup_lat), parseFloat(log.pickup_lng)];
-            latLngs.push(pt1);
-
-            let markerIconHtml = '🔘';
-            if (log.mode === 'train') markerIconHtml = '🚆';
-            if (log.mode === 'car') markerIconHtml = '🚗';
-            if (log.mode === 'missing') markerIconHtml = '❓';
-
-            const customIcon = L.divIcon({
-                className: 'gmaps-place-marker',
-                html: `<div style="width:24px; height:24px; background:#fff; border-radius:50%; border:2px solid #5f6368; display:flex; align-items:center; justify-content:center; font-size:11px;">${markerIconHtml}</div>`,
-                iconSize: [24, 24],
-                iconAnchor: [12, 12]
-            });
-
-            const marker = L.marker(pt1, { icon: customIcon }).addTo(mobileTimelineMap);
-            mobileTimelineMapLayers.push(marker);
-
-            if (log.drop_lat && log.drop_lng) {
-                const pt2 = [parseFloat(log.drop_lat), parseFloat(log.drop_lng)];
-                latLngs.push(pt2);
-                const line = L.polyline([pt1, pt2], { color: '#1a73e8', weight: 4 }).addTo(mobileTimelineMap);
-                mobileTimelineMapLayers.push(line);
-            }
-        }
-    });
-
-    if (latLngs.length > 0) {
-        mobileTimelineMap.fitBounds(L.latLngBounds(latLngs), { padding: [20, 20] });
+function setPhoneSimWidth(widthPx) {
+    const card = document.querySelector('.phone-frame-card');
+    if (card) {
+        card.style.width = widthPx + 'px';
     }
 }
 
@@ -1588,4 +1763,5 @@ function deleteTimelineItem(logId) {
             }
         });
 }
+
 
