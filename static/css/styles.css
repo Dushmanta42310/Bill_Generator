@@ -2773,30 +2773,7 @@ input:checked + .slider:before {
     color: var(--text-secondary);
 }
 
-/* Responsive adjustments for phone view toggles */
-@media (max-width: 768px) {
-    .mobile-map-toggle-btn {
-        display: flex;
-    }
-    
-    .gmaps-timeline-body.show-feed-only .gmaps-map-wrapper {
-        display: none;
-    }
-    
-    .gmaps-timeline-body.show-feed-only .gmaps-sheet-panel {
-        max-height: none;
-        height: auto;
-    }
-    
-    .gmaps-timeline-body.show-map-only .gmaps-sheet-panel {
-        display: none;
-    }
-    
-    .gmaps-timeline-body.show-map-only .gmaps-map-wrapper {
-        height: calc(100vh - 160px);
-        min-height: 400px;
-    }
-}
+
 
 
 
