@@ -89,44 +89,79 @@ function toggleSidebar() {
     }
 }
 
-// Smoothly slide to Daily Tracking Section without opening sidebar
-function openDailyTrackingSection(e) {
+// Toggle Desktop Sidebar Collapsed / Expanded Mode
+function toggleDesktopSidebar() {
+    const container = document.querySelector('.app-container');
+    if (container) {
+        container.classList.toggle('sidebar-collapsed');
+        setTimeout(() => {
+            if (mainMap) mainMap.invalidateSize();
+            if (previewMap) previewMap.invalidateSize();
+            if (typeof timelineMap !== 'undefined' && timelineMap) timelineMap.invalidateSize();
+        }, 250);
+    }
+}
+
+// Switch Main Section View (Dashboard, Timeline, History, All)
+function switchMainView(viewName, e) {
     if (e) e.preventDefault();
-    
-    // Ensure mobile sidebar drawer stays closed
+
+    // Ensure mobile sidebar stays closed
     const sidebar = document.getElementById('app-sidebar');
     const backdrop = document.getElementById('sidebar-backdrop');
-    if (sidebar && sidebar.classList.contains('open')) {
-        sidebar.classList.remove('open');
-    }
-    if (backdrop && backdrop.classList.contains('active')) {
-        backdrop.classList.remove('active');
+    if (sidebar && sidebar.classList.contains('open')) sidebar.classList.remove('open');
+    if (backdrop && backdrop.classList.contains('active')) backdrop.classList.remove('active');
+
+    const dashGrid = document.getElementById('dashboard');
+    const timeSec = document.getElementById('timeline-section');
+    const histSec = document.getElementById('history-section');
+
+    // Reset section visibilities
+    if (dashGrid) dashGrid.classList.remove('main-section-hidden');
+    if (timeSec) timeSec.classList.remove('main-section-hidden');
+    if (histSec) histSec.classList.remove('main-section-hidden');
+
+    if (viewName === 'dashboard') {
+        if (timeSec) timeSec.classList.add('main-section-hidden');
+        if (histSec) histSec.classList.add('main-section-hidden');
+    } else if (viewName === 'timeline') {
+        if (dashGrid) dashGrid.classList.add('main-section-hidden');
+        if (histSec) histSec.classList.add('main-section-hidden');
+    } else if (viewName === 'history') {
+        if (dashGrid) dashGrid.classList.add('main-section-hidden');
+        if (timeSec) timeSec.classList.add('main-section-hidden');
     }
 
-    const timelineEl = document.getElementById('timeline-section');
-    if (timelineEl) {
-        timelineEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        
-        // Trigger pulse highlight glow effect
-        timelineEl.classList.remove('timeline-pulse-highlight');
-        void timelineEl.offsetWidth;
-        timelineEl.classList.add('timeline-pulse-highlight');
-        
-        setTimeout(() => {
-            if (typeof timelineMap !== 'undefined' && timelineMap) {
-                timelineMap.invalidateSize();
-            }
-        }, 350);
-    }
+    // Update top view tabs
+    document.querySelectorAll('.view-tab-btn').forEach(btn => btn.classList.remove('active'));
+    const activeVTab = document.getElementById(`vtab-${viewName}`);
+    if (activeVTab) activeVTab.classList.add('active');
 
-    // Update active nav link states
+    // Update sidebar nav items
     document.querySelectorAll('.sidebar-nav .nav-item, .mobile-nav-bar .m-nav-item').forEach(link => {
-        if (link.getAttribute('href') === '#timeline-section') {
+        const href = link.getAttribute('href') || '';
+        if ((viewName === 'dashboard' && href.includes('dashboard')) ||
+            (viewName === 'timeline' && href.includes('timeline')) ||
+            (viewName === 'history' && href.includes('history')) ||
+            (viewName === 'all' && link.id === 'nav-item-all')) {
             link.classList.add('active');
         } else {
             link.classList.remove('active');
         }
     });
+
+    // Scroll to top of content area & recalculate Leaflet map sizes
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setTimeout(() => {
+        if (mainMap) mainMap.invalidateSize();
+        if (previewMap) previewMap.invalidateSize();
+        if (typeof timelineMap !== 'undefined' && timelineMap) timelineMap.invalidateSize();
+    }, 200);
+}
+
+// Legacy alias for smooth navigation
+function openDailyTrackingSection(e) {
+    switchMainView('timeline', e);
 }
 
 // Set default datetime value in format local datetime inputs expect: YYYY-MM-DDThh:mm

@@ -91,6 +91,98 @@ body {
     flex-direction: column;
     justify-content: space-between;
     flex-shrink: 0;
+    transition: width var(--transition-speed) ease, padding var(--transition-speed) ease, margin var(--transition-speed) ease;
+}
+
+/* Collapsed Desktop Sidebar Mode */
+.app-container.sidebar-collapsed .sidebar {
+    width: 0;
+    padding: 0;
+    overflow: hidden;
+    border-right: none;
+}
+
+.desktop-sidebar-collapse-btn,
+.desktop-top-sidebar-btn {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.desktop-sidebar-collapse-btn:hover,
+.desktop-top-sidebar-btn:hover {
+    background: var(--border-color);
+    color: var(--accent);
+}
+
+.desktop-sidebar-collapse-btn {
+    margin-left: auto;
+}
+
+/* Top View Switcher Tabs Bar */
+.main-view-switcher-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    padding: 6px;
+    border-radius: var(--border-radius);
+    margin-bottom: 16px;
+    overflow-x: auto;
+}
+
+.view-tab-btn {
+    flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: 8px;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.view-tab-btn i {
+    width: 16px;
+    height: 16px;
+    color: var(--text-muted);
+}
+
+.view-tab-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.view-tab-btn.active {
+    background: var(--bg-tertiary);
+    color: var(--accent);
+    border-color: var(--border-color);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.view-tab-btn.active i {
+    color: var(--accent);
+}
+
+/* Section visibility switching */
+.main-section-hidden {
+    display: none !important;
 }
 
 .logo-area {

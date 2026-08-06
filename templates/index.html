@@ -29,28 +29,31 @@
                         <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="#f39c12"/>
                     </svg>
                 </div>
-                <h2>RAPID-GEN</h2>
+                <h2 class="logo-text">RAPID-GEN</h2>
+                <button class="desktop-sidebar-collapse-btn" onclick="toggleDesktopSidebar()" title="Collapse Sidebar">
+                    <i data-lucide="panel-left-close"></i>
+                </button>
                 <button class="mobile-sidebar-close" onclick="toggleSidebar()" title="Close Navigation">
                     <i data-lucide="x"></i>
                 </button>
             </div>
             
             <nav class="sidebar-nav">
-                <a href="#dashboard" class="nav-item active">
+                <a href="#dashboard" class="nav-item active" id="nav-item-dashboard" onclick="switchMainView('dashboard', event)">
                     <i data-lucide="layout-dashboard"></i>
-                    <span>Dashboard</span>
+                    <span>Dashboard Form</span>
                 </a>
-                <a href="#timeline-section" class="nav-item" onclick="openDailyTrackingSection(event)">
+                <a href="#timeline-section" class="nav-item" id="nav-item-timeline" onclick="switchMainView('timeline', event)">
                     <i data-lucide="navigation"></i>
                     <span>Daily Timeline</span>
                 </a>
-                <a href="#history-section" class="nav-item">
+                <a href="#history-section" class="nav-item" id="nav-item-history" onclick="switchMainView('history', event)">
                     <i data-lucide="history"></i>
                     <span>Ride Logs</span>
                 </a>
-                <a href="https://github.com" target="_blank" class="nav-item">
-                    <i data-lucide="help-circle"></i>
-                    <span>Documentation</span>
+                <a href="javascript:void(0)" class="nav-item" id="nav-item-all" onclick="switchMainView('all', event)">
+                    <i data-lucide="layers"></i>
+                    <span>View All Sections</span>
                 </a>
             </nav>
             
@@ -63,12 +66,15 @@
         </aside>
 
         <!-- Main Content Area -->
-        <main class="main-content">
+        <main class="main-content" id="main-content-area">
             <!-- Header -->
             <header class="top-bar">
                 <div class="top-bar-left">
-                    <button class="mobile-menu-btn" onclick="toggleSidebar()" title="Toggle Navigation">
+                    <button class="mobile-menu-btn" onclick="toggleSidebar()" title="Toggle Mobile Navigation">
                         <i data-lucide="menu"></i>
+                    </button>
+                    <button class="desktop-top-sidebar-btn" onclick="toggleDesktopSidebar()" title="Hide / Show Sidebar">
+                        <i data-lucide="panel-left"></i>
                     </button>
                     <div class="welcome">
                         <h1>Ride Invoice Studio</h1>
@@ -76,7 +82,7 @@
                     </div>
                 </div>
                 <div class="quick-actions">
-                    <button class="btn btn-accent" onclick="openDailyTrackingSection(event)" title="Open Daily Routine Map Tracking">
+                    <button class="btn btn-accent" onclick="switchMainView('timeline', event)" title="Open Daily Routine Map Tracking">
                         <i data-lucide="map-pin"></i>
                         <span>Daily Tracking</span>
                     </button>
@@ -95,17 +101,37 @@
                 </div>
             </header>
 
+            <!-- Main View Switcher Bar (Quick Tabs to jump cleanly between sections) -->
+            <div class="main-view-switcher-bar">
+                <button class="view-tab-btn active" id="vtab-dashboard" onclick="switchMainView('dashboard', event)">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>1. Dashboard Form</span>
+                </button>
+                <button class="view-tab-btn" id="vtab-timeline" onclick="switchMainView('timeline', event)">
+                    <i data-lucide="navigation"></i>
+                    <span>2. Daily Tracking Map</span>
+                </button>
+                <button class="view-tab-btn" id="vtab-history" onclick="switchMainView('history', event)">
+                    <i data-lucide="history"></i>
+                    <span>3. Ride Logs</span>
+                </button>
+                <button class="view-tab-btn" id="vtab-all" onclick="switchMainView('all', event)">
+                    <i data-lucide="layers"></i>
+                    <span>Show All</span>
+                </button>
+            </div>
+
             <!-- Mobile Top Quick Navigation Bar (Horizontal Row for Phone View) -->
             <nav class="mobile-nav-bar">
-                <a href="#dashboard" class="m-nav-item active">
+                <a href="#dashboard" class="m-nav-item active" onclick="switchMainView('dashboard', event)">
                     <i data-lucide="layout-dashboard"></i>
                     <span>Dashboard</span>
                 </a>
-                <a href="#timeline-section" class="m-nav-item" onclick="openDailyTrackingSection(event)">
+                <a href="#timeline-section" class="m-nav-item" onclick="switchMainView('timeline', event)">
                     <i data-lucide="navigation"></i>
                     <span>Daily Timeline</span>
                 </a>
-                <a href="#history-section" class="m-nav-item">
+                <a href="#history-section" class="m-nav-item" onclick="switchMainView('history', event)">
                     <i data-lucide="history"></i>
                     <span>Ride Logs</span>
                 </a>
