@@ -1748,27 +1748,6 @@ function toggleMobileViewMode() {
     }
 }
 
-// Phone View Simulator Modal Logic
-function togglePhoneSimulator() {
-    const modal = document.getElementById('phone-simulator-modal');
-    if (!modal) return;
-    modal.classList.toggle('hidden');
-
-    if (!modal.classList.contains('hidden')) {
-        const iframe = document.getElementById('phone-simulator-iframe');
-        if (iframe && iframe.src !== window.location.href) {
-            iframe.src = window.location.href;
-        }
-    }
-}
-
-function setPhoneSimWidth(widthPx) {
-    const card = document.querySelector('.phone-frame-card');
-    if (card) {
-        card.style.width = widthPx + 'px';
-    }
-}
-
 function openAddTravelModal(logId = null) {
     const modal = document.getElementById('add-travel-modal');
     if (!modal) return;
@@ -1830,14 +1809,14 @@ function handleSaveTravelModal(e) {
             closeAddTravelModal();
             loadTimelineData(currentTimelineDate);
         } else {
-            alert('Error saving leg: ' + data.error);
+            alert('Error saving log: ' + data.error);
         }
     })
     .catch(err => console.error('Save error: ', err));
 }
 
 function deleteTimelineItem(logId) {
-    if (!confirm('Are you sure you want to remove this travel leg?')) return;
+    if (!confirm('Are you sure you want to remove this travel log?')) return;
     fetch(`/api/timeline/${logId}`, { method: 'DELETE' })
         .then(res => res.json())
         .then(data => {

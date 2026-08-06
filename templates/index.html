@@ -775,7 +775,7 @@
                         </div>
 
                         <!-- Floating Edit Pencil FAB -->
-                        <button class="gmaps-fab-edit" onclick="openAddTravelModal()" title="Add / Edit Leg">
+                        <button class="gmaps-fab-edit" onclick="openAddTravelModal()" title="Add / Edit Log">
                             <i data-lucide="pencil"></i>
                         </button>
                     </div>
@@ -825,13 +825,13 @@
         </main>
     </div>
 
-    <!-- Modal for Adding / Editing Travel Legs -->
+    <!-- Modal for Adding / Editing Travel Logs -->
     <div id="add-travel-modal" class="modal-overlay hidden">
         <div class="modal-card card">
             <div class="card-header">
                 <div class="card-header-title">
                     <i data-lucide="plus-circle"></i>
-                    <h3 id="modal-travel-title">Add Travel Leg</h3>
+                    <h3 id="modal-travel-title">Add Travel Log</h3>
                 </div>
                 <button type="button" class="btn-icon" onclick="closeAddTravelModal()">
                     <i data-lucide="x"></i>
@@ -857,7 +857,7 @@
                     <div class="form-group">
                         <label for="modal_log_type">Record Type</label>
                         <select id="modal_log_type">
-                            <option value="travel" selected>Travel Leg</option>
+                            <option value="travel" selected>Travel Log</option>
                             <option value="stop">Place Stop</option>
                         </select>
                     </div>
@@ -896,7 +896,7 @@
                 </div>
                 <div class="modal-footer pt-15">
                     <button type="button" class="btn btn-secondary" onclick="closeAddTravelModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Save Leg to Timeline</button>
+                    <button type="submit" class="btn btn-primary">Save Log to Timeline</button>
                 </div>
             </form>
         </div>
