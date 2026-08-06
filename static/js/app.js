@@ -1264,9 +1264,6 @@ function updateFormattedTimelineDate(dateStr) {
     
     const display = document.getElementById('timeline-date-formatted');
     if (display) display.innerText = formatted;
-    
-    const phoneDisplay = document.getElementById('phone-date-text');
-    if (phoneDisplay) phoneDisplay.innerText = formatted;
 }
 
 function changeTimelineDate(deltaDays) {
@@ -1311,16 +1308,6 @@ function renderTimelineUI(logs) {
     renderModeSummaryChips(logs);
     renderTimelineFeed(logs);
     renderTimelineMap(logs);
-    
-    // Also sync mobile phone view if open
-    const phoneFeed = document.getElementById('phone-timeline-feed');
-    const phoneSummary = document.getElementById('phone-mode-summary-container');
-    if (phoneFeed && document.getElementById('timeline-feed')) {
-        phoneFeed.innerHTML = document.getElementById('timeline-feed').innerHTML;
-    }
-    if (phoneSummary && document.getElementById('mode-summary-container')) {
-        phoneSummary.innerHTML = document.getElementById('mode-summary-container').innerHTML;
-    }
 }
 
 function renderModeSummaryChips(logs) {
@@ -1728,25 +1715,7 @@ function saveGPSToTimeline(lat, lng, dateStr, title, address) {
     .catch(err => console.error("GPS API Error: ", err));
 }
 
-// Mobile View Switcher Mode (Map vs Timeline Feed)
-let isMobileMapShowing = false;
-function toggleMobileViewMode() {
-    const body = document.querySelector('.gmaps-timeline-body');
-    const text = document.getElementById('mobile-toggle-btn-text');
-    if (!body) return;
 
-    isMobileMapShowing = !isMobileMapShowing;
-    if (isMobileMapShowing) {
-        body.classList.add('show-map-only');
-        body.classList.remove('show-feed-only');
-        if (text) text.innerText = 'View Feed';
-        setTimeout(() => { if (timelineMap) timelineMap.invalidateSize(); }, 200);
-    } else {
-        body.classList.add('show-feed-only');
-        body.classList.remove('show-map-only');
-        if (text) text.innerText = 'View Map';
-    }
-}
 
 function openAddTravelModal(logId = null) {
     const modal = document.getElementById('add-travel-modal');
