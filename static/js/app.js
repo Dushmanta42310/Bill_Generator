@@ -1755,6 +1755,11 @@ function openAddTravelModal(logId = null) {
     document.getElementById('modal_travel_date').value = currentTimelineDate;
     document.getElementById('modal_log_id').value = logId || '';
 
+    const titleEl = document.getElementById('modal-travel-title');
+    if (titleEl) {
+        titleEl.innerText = logId ? 'Edit Travel Log' : 'Add Travel Log';
+    }
+
     if (logId) {
         const item = currentTimelineLogs.find(l => l.log_id === logId);
         if (item) {
