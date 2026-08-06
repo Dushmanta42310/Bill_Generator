@@ -83,23 +83,44 @@ body {
 }
 
 .sidebar {
-    width: 260px;
+    position: fixed;
+    top: 0;
+    left: -300px;
+    width: 270px;
+    height: 100vh;
     background-color: var(--bg-secondary);
     border-right: 1px solid var(--border-color);
     padding: 24px 16px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    flex-shrink: 0;
-    transition: width var(--transition-speed) ease, padding var(--transition-speed) ease, margin var(--transition-speed) ease;
+    z-index: 99999;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 10px 0 40px rgba(0, 0, 0, 0.8);
 }
 
-/* Collapsed Desktop Sidebar Mode */
-.app-container.sidebar-collapsed .sidebar {
-    width: 0;
-    padding: 0;
-    overflow: hidden;
-    border-right: none;
+.sidebar.open {
+    left: 0;
+}
+
+.top-menu-btn {
+    background: var(--bg-tertiary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 8px 14px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.top-menu-btn:hover {
+    background: var(--border-color);
+    color: var(--accent);
 }
 
 .desktop-sidebar-collapse-btn,
@@ -307,15 +328,15 @@ body {
     box-shadow: 0 0 8px #ef4444;
 }
 
-/* Main Content Area */
+/* Main Content Area (Occupies 100% width of screen by default) */
 .main-content {
+    width: 100%;
+    max-width: 100%;
     flex-grow: 1;
-    padding: 30px;
+    padding: 24px 30px;
     display: flex;
     flex-direction: column;
     gap: 24px;
-    overflow-y: auto;
-    max-height: 100vh;
 }
 
 .top-bar {

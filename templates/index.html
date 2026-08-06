@@ -70,11 +70,9 @@
             <!-- Header -->
             <header class="top-bar">
                 <div class="top-bar-left">
-                    <button class="mobile-menu-btn" onclick="toggleSidebar()" title="Toggle Mobile Navigation">
+                    <button class="top-menu-btn" onclick="toggleSidebar()" title="Toggle Navigation Menu">
                         <i data-lucide="menu"></i>
-                    </button>
-                    <button class="desktop-top-sidebar-btn" onclick="toggleDesktopSidebar()" title="Hide / Show Sidebar">
-                        <i data-lucide="panel-left"></i>
+                        <span>Menu</span>
                     </button>
                     <div class="welcome">
                         <h1>Ride Invoice Studio</h1>
@@ -85,10 +83,6 @@
                     <button class="btn btn-accent" onclick="switchMainView('timeline', event)" title="Open Daily Routine Map Tracking">
                         <i data-lucide="map-pin"></i>
                         <span>Daily Tracking</span>
-                    </button>
-                    <button class="btn btn-phone-sim" onclick="togglePhoneSimulator()" title="Test Phone View Simulator">
-                        <i data-lucide="smartphone"></i>
-                        <span>Phone View</span>
                     </button>
                     <button class="btn btn-secondary" onclick="resetForm()">
                         <i data-lucide="rotate-ccw"></i>
@@ -910,27 +904,6 @@
                     <button type="submit" class="btn btn-primary">Save Leg to Timeline</button>
                 </div>
             </form>
-        </div>
-    </div>
-
-    <!-- Phone View Simulator Modal -->
-    <div id="phone-simulator-modal" class="modal-overlay hidden">
-        <div class="phone-frame-card">
-            <div class="phone-frame-header">
-                <div class="phone-notch"></div>
-                <span class="phone-frame-title">📱 Phone Display View Simulator</span>
-                <button type="button" class="btn-icon" onclick="togglePhoneSimulator()" title="Close Simulator">
-                    <i data-lucide="x"></i>
-                </button>
-            </div>
-            <div class="phone-frame-body">
-                <iframe id="phone-simulator-iframe" src="/" title="Mobile View Preview"></iframe>
-            </div>
-            <div class="phone-frame-footer">
-                <button class="btn btn-secondary btn-sm" onclick="setPhoneSimWidth(375)">iPhone SE (375px)</button>
-                <button class="btn btn-secondary btn-sm" onclick="setPhoneSimWidth(390)">iPhone 14 (390px)</button>
-                <button class="btn btn-secondary btn-sm" onclick="setPhoneSimWidth(412)">Pixel 7 (412px)</button>
-            </div>
         </div>
     </div>
 
