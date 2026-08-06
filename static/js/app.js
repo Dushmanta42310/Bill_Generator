@@ -1209,12 +1209,20 @@ let mobileTimelineMap = null;
 let timelineMapLayers = [];
 let mobileTimelineMapLayers = [];
 
-// Initialize currentTimelineDate to default sample date (2026-07-01) matching Google Maps screenshot
-let currentTimelineDate = '2026-07-01';
+// Get real system local date string (YYYY-MM-DD)
+function getSystemTodayDate() {
+    const now = new Date();
+    const offset = now.getTimezoneOffset() * 60000;
+    return (new Date(now - offset)).toISOString().split('T')[0];
+}
+
+// Initialize currentTimelineDate to real system date
+let currentTimelineDate = getSystemTodayDate();
 let currentTimelineLogs = [];
 
 function initTimelineModule() {
-    // 1. Set current date input
+    // 1. Set date input to current system date
+    currentTimelineDate = getSystemTodayDate();
     const dateInput = document.getElementById('timeline-date-input');
     if (dateInput) {
         dateInput.value = currentTimelineDate;
@@ -1236,7 +1244,7 @@ function initTimelineModule() {
     updateLiveClock();
     setInterval(updateLiveClock, 10000);
 
-    // 4. Fetch initial timeline data
+    // 4. Fetch initial system timeline data for today
     loadTimelineData(currentTimelineDate);
 }
 
@@ -1658,66 +1666,66 @@ function focusPlaceOnTimeline(lat, lng, title) {
     }
 }
 
-// Live GPS Location Tracking
+// Live GPS Location Tracking using system device data
 function trackGPSLocation() {
     if (!navigator.geolocation) {
-        alert("Geolocation is not supported by your browser.");
+        alert("GPS location tracking is not supported by your device browser.");
         return;
     }
 
-    alert("Requesting current GPS coordinates...");
+    const systemToday = getSystemTodayDate();
+
     navigator.geolocation.getCurrentPosition(
         (position) => {
             const lat = position.coords.latitude;
             const lng = position.coords.longitude;
+            const accuracy = position.coords.accuracy ? ` (Accuracy: ${Math.round(position.coords.accuracy)}m)` : '';
 
-            fetch('/api/timeline/gps', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    lat: lat,
-                    lng: lng,
-                    travel_date: currentTimelineDate,
-                    title: 'Logged Location (GPS)',
-                    address: `Lat: ${lat.toFixed(4)}, Lng: ${lng.toFixed(4)}`
+            // Reverse geocode system location via Nominatim API
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+                .then(r => r.json())
+                .then(geo => {
+                    const addr = geo.display_name || `Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}`;
+                    saveGPSToTimeline(lat, lng, systemToday, 'Live System GPS Location', addr + accuracy);
                 })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    alert("GPS location successfully logged to daily routine map!");
-                    loadTimelineData(currentTimelineDate);
-                } else {
-                    alert("Error saving GPS location: " + data.error);
-                }
-            });
+                .catch(() => {
+                    saveGPSToTimeline(lat, lng, systemToday, 'Live System GPS Location', `Lat: ${lat.toFixed(5)}, Lng: ${lng.toFixed(5)}` + accuracy);
+                });
         },
         (error) => {
-            console.warn("GPS error: ", error.message);
-            // Fallback sample coordinates if user denies browser location permission
-            const mockLat = 28.6644 + (Math.random() - 0.5) * 0.02;
-            const mockLng = 77.3601 + (Math.random() - 0.5) * 0.02;
-            fetch('/api/timeline/gps', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    lat: mockLat,
-                    lng: mockLng,
-                    travel_date: currentTimelineDate,
-                    title: 'Current Routine Stop (Simulated GPS)',
-                    address: 'Sector 3, Vasundhara, Ghaziabad'
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    alert("GPS stop logged to daily routine timeline map!");
-                    loadTimelineData(currentTimelineDate);
-                }
-            });
+            alert(`GPS Access: ${error.message}. Please enable location permissions on your phone/browser.`);
         },
-        { enableHighAccuracy: true, timeout: 5000 }
+        { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
     );
+}
+
+function saveGPSToTimeline(lat, lng, dateStr, title, address) {
+    fetch('/api/timeline/gps', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            lat: lat,
+            lng: lng,
+            travel_date: dateStr,
+            title: title,
+            address: address,
+            log_type: 'stop'
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            alert(`System GPS location successfully logged to today's routine timeline!\n${address}`);
+            currentTimelineDate = dateStr;
+            const dateInput = document.getElementById('timeline-date-input');
+            if (dateInput) dateInput.value = dateStr;
+            updateFormattedTimelineDate(dateStr);
+            loadTimelineData(dateStr);
+        } else {
+            alert('Error saving system GPS location: ' + data.error);
+        }
+    })
+    .catch(err => console.error("GPS API Error: ", err));
 }
 
 // Mobile View Switcher Mode (Map vs Timeline Feed)

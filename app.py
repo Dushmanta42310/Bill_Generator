@@ -225,7 +225,7 @@ def get_timeline_places():
 
 @app.route('/api/timeline/gps', methods=['POST'])
 def save_gps_timeline():
-    """API endpoint to save live GPS location entry to daily routine timeline."""
+    """API endpoint to save live device GPS location entry to daily routine timeline."""
     try:
         data = request.get_json()
         if not data or not data.get('lat') or not data.get('lng'):
@@ -237,28 +237,31 @@ def save_gps_timeline():
         import datetime
         now = datetime.datetime.now()
         travel_date = data.get('travel_date') or now.strftime('%Y-%m-%d')
-        start_time = now.strftime('%I:%M %p')
+        start_time = data.get('start_time') or now.strftime('%I:%M %p')
 
         payload = {
             'log_id': f"GPS_{int(now.timestamp() * 1000)}",
             'travel_date': travel_date,
             'start_time': start_time,
-            'end_time': start_time,
-            'log_type': 'stop',
-            'title': data.get('title') or 'Current Location (GPS)',
-            'subtitle': data.get('address') or f"Lat: {data['lat']}, Lng: {data['lng']}",
-            'mode': 'other',
-            'distance_km': 0.0,
-            'duration_min': 0.0,
+            'end_time': now.strftime('%I:%M %p'),
+            'log_type': data.get('log_type', 'stop'),
+            'title': data.get('title') or 'Live GPS Location',
+            'subtitle': data.get('address') or f"Lat: {float(data['lat']):.4f}, Lng: {float(data['lng']):.4f}",
+            'mode': data.get('mode', 'other'),
+            'distance_km': float(data.get('distance_km', 0.0)),
+            'duration_min': float(data.get('duration_min', 0.0)),
             'pickup_address': data.get('address') or f"Lat: {data['lat']}, Lng: {data['lng']}",
+            'drop_address': data.get('drop_address', ''),
             'pickup_lat': float(data['lat']),
-            'pickup_lng': float(data['lng'])
+            'pickup_lng': float(data['lng']),
+            'drop_lat': float(data['drop_lat']) if data.get('drop_lat') is not None else None,
+            'drop_lng': float(data['drop_lng']) if data.get('drop_lng') is not None else None
         }
 
         log_id = db.save_travel_log(payload)
         return jsonify({
             'success': True,
-            'message': 'GPS location saved to timeline routine',
+            'message': 'System GPS location saved to daily routine timeline',
             'log': payload
         }), 201
     except Exception as e:
