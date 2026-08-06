@@ -89,6 +89,46 @@ function toggleSidebar() {
     }
 }
 
+// Smoothly slide to Daily Tracking Section without opening sidebar
+function openDailyTrackingSection(e) {
+    if (e) e.preventDefault();
+    
+    // Ensure mobile sidebar drawer stays closed
+    const sidebar = document.getElementById('app-sidebar');
+    const backdrop = document.getElementById('sidebar-backdrop');
+    if (sidebar && sidebar.classList.contains('open')) {
+        sidebar.classList.remove('open');
+    }
+    if (backdrop && backdrop.classList.contains('active')) {
+        backdrop.classList.remove('active');
+    }
+
+    const timelineEl = document.getElementById('timeline-section');
+    if (timelineEl) {
+        timelineEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        
+        // Trigger pulse highlight glow effect
+        timelineEl.classList.remove('timeline-pulse-highlight');
+        void timelineEl.offsetWidth;
+        timelineEl.classList.add('timeline-pulse-highlight');
+        
+        setTimeout(() => {
+            if (typeof timelineMap !== 'undefined' && timelineMap) {
+                timelineMap.invalidateSize();
+            }
+        }, 350);
+    }
+
+    // Update active nav link states
+    document.querySelectorAll('.sidebar-nav .nav-item, .mobile-nav-bar .m-nav-item').forEach(link => {
+        if (link.getAttribute('href') === '#timeline-section') {
+            link.classList.add('active');
+        } else {
+            link.classList.remove('active');
+        }
+    });
+}
+
 // Set default datetime value in format local datetime inputs expect: YYYY-MM-DDThh:mm
 function setDefaultDateTime() {
     const now = new Date();

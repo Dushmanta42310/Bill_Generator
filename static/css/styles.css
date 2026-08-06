@@ -26,6 +26,10 @@
     box-sizing: border-box;
 }
 
+html {
+    scroll-behavior: smooth;
+}
+
 body {
     background-color: var(--bg-primary);
     color: var(--text-primary);
@@ -33,6 +37,26 @@ body {
     font-size: 15px;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
+}
+
+/* Timeline Pulse Glow Effect when navigated to */
+.timeline-pulse-highlight {
+    animation: timelineSlidePulse 1.2s ease-out;
+}
+
+@keyframes timelineSlidePulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+        transform: translateY(6px);
+    }
+    50% {
+        box-shadow: 0 0 35px 8px rgba(245, 158, 11, 0.4);
+        transform: translateY(0);
+    }
+    100% {
+        box-shadow: var(--card-shadow);
+        transform: translateY(0);
+    }
 }
 
 /* Layout Container */

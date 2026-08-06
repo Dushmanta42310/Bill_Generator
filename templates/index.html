@@ -40,7 +40,7 @@
                     <i data-lucide="layout-dashboard"></i>
                     <span>Dashboard</span>
                 </a>
-                <a href="#timeline-section" class="nav-item">
+                <a href="#timeline-section" class="nav-item" onclick="openDailyTrackingSection(event)">
                     <i data-lucide="navigation"></i>
                     <span>Daily Timeline</span>
                 </a>
@@ -76,6 +76,10 @@
                     </div>
                 </div>
                 <div class="quick-actions">
+                    <button class="btn btn-accent" onclick="openDailyTrackingSection(event)" title="Open Daily Routine Map Tracking">
+                        <i data-lucide="map-pin"></i>
+                        <span>Daily Tracking</span>
+                    </button>
                     <button class="btn btn-phone-sim" onclick="togglePhoneSimulator()" title="Test Phone View Simulator">
                         <i data-lucide="smartphone"></i>
                         <span>Phone View</span>
@@ -97,7 +101,7 @@
                     <i data-lucide="layout-dashboard"></i>
                     <span>Dashboard</span>
                 </a>
-                <a href="#timeline-section" class="m-nav-item">
+                <a href="#timeline-section" class="m-nav-item" onclick="openDailyTrackingSection(event)">
                     <i data-lucide="navigation"></i>
                     <span>Daily Timeline</span>
                 </a>
